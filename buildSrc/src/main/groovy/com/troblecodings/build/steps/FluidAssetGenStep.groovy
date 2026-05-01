@@ -63,10 +63,15 @@ class FluidAssetGenStep extends AssetMigrationStep {
                         textures: [particle: "${modid}:blocks/${fluidName}_still".toString()]
                 ])))
 
+        // Bucket-Model nutzt Forges DynamicBucketModel (Loader "forge:bucket"),
+        // der den Eimer-Look mit der zum Fluid gehoerenden Mask faerbt -- das
+        // entspricht dem Wasser-/Lava-Eimer-Verhalten. Der Loader ist seit
+        // 1.14.4-28.x out of the box bei Forge dabei.
         ctx.write("assets/${modid}/models/item/${fluidName}_bucket.json",
                 JsonOutput.prettyPrint(JsonOutput.toJson([
-                        parent  : 'item/generated',
-                        textures: [layer0: 'item/bucket']
+                        parent: 'forge:item/bucket',
+                        loader: 'forge:bucket',
+                        fluid : "${modid}:${fluidName}".toString()
                 ])))
     }
 }
