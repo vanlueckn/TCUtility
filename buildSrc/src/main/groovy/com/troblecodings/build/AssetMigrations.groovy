@@ -1,9 +1,12 @@
 package com.troblecodings.build
 
+import com.troblecodings.build.steps.BlockstateWaterloggedStep
+import com.troblecodings.build.steps.BucketLoaderRenameStep
 import com.troblecodings.build.steps.FenceWallTagGenStep
 import com.troblecodings.build.steps.FixHashedTextureKeysStep
 import com.troblecodings.build.steps.FluidAssetGenStep
 import com.troblecodings.build.steps.ForgeMarkerBlockstateStep
+import com.troblecodings.build.steps.VanillaPostFlatteningRenameStep
 import com.troblecodings.build.steps.VanillaTextureRefStep
 
 /**
@@ -27,6 +30,7 @@ class AssetMigrations {
         return [
                 new FixHashedTextureKeysStep(),
                 new ForgeMarkerBlockstateStep(),
+                new BlockstateWaterloggedStep(),
                 new VanillaTextureRefStep(),
                 new FluidAssetGenStep(),
                 new FenceWallTagGenStep(),
@@ -45,12 +49,26 @@ class AssetMigrations {
     }
 
     /**
-     * Migrationen 1.16 -> 1.19. pack_format wechselt von 6 auf 9, das wird
-     * in der Original-{@code pack.mcmeta} gepflegt. Block-Models und
-     * Blockstates bleiben weitgehend identisch; Platzhalter, falls spaeter
-     * Texture-Pfad-Renames noetig werden (z.B. fuer Cave-Update-Bloecke).
+     * Migrationen 1.16 -> 1.19. pack_format wechselt von 6 auf 9. Vanilla
+     * benennt zwischen 1.16 und 1.19 einige Texturen um (1.17:
+     * {@code grass_path} wird zu {@code dirt_path}); das laeuft post-
+     * flattening, weil die Refs an dieser Stelle bereits {@code minecraft:block/X}
+     * (Singular) sind.
      */
     static List<AssetMigrationStep> mc1_16_to_mc1_19() {
-        return []
+        return [
+                new VanillaPostFlatteningRenameStep(),
+        ]
+    }
+
+    /**
+     * Migrationen 1.19 -> 1.20. Forge hat den DynamicBucketModel-Loader von
+     * {@code forge:bucket} auf {@code forge:fluid_container} umbenannt; das
+     * generierte Bucket-Model muss entsprechend nachgezogen werden.
+     */
+    static List<AssetMigrationStep> mc1_19_to_mc1_20() {
+        return [
+                new BucketLoaderRenameStep(),
+        ]
     }
 }

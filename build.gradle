@@ -96,14 +96,14 @@ processResources {
     }
 
     // Asset-Format-Migration. Die Pipeline verkettet alle Versions-Spruenge
-    // bis zum Zielformat -- 1.12->1.14, dann 1.14->1.16, dann 1.16->1.19
-    // (Platzhalter, falls spaeter Texture-/Blockstate-Renames noetig
-    // werden). Original-JSONs unter src/main/resources bleiben unangetastet.
+    // bis zum Zielformat -- 1.12->1.14, 1.14->1.16, 1.16->1.19, 1.19->1.20.
+    // Original-JSONs unter src/main/resources bleiben unangetastet.
     doLast {
         def pipeline = new com.troblecodings.build.AssetMigrationPipeline()
         pipeline.addAll(com.troblecodings.build.AssetMigrations.mc1_12_to_mc1_14())
         pipeline.addAll(com.troblecodings.build.AssetMigrations.mc1_14_to_mc1_16())
         pipeline.addAll(com.troblecodings.build.AssetMigrations.mc1_16_to_mc1_19())
+        pipeline.addAll(com.troblecodings.build.AssetMigrations.mc1_19_to_mc1_20())
         pipeline.run(destinationDir)
         pipeline.report.each { logger.info(it) }
         logger.lifecycle("[asset-migrate] applied ${pipeline.report.size()} resource transforms")
