@@ -6,7 +6,9 @@ import com.troblecodings.tcutility.utils.BlockCreateInfo;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.block.material.Material;
+import net.minecraft.item.ItemStack;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.item.Item;
@@ -61,12 +63,19 @@ public class TCBigDoor extends Block {
     public static final EnumProperty<BigDoorThird> THIRD = EnumProperty.create("third",
             BigDoorThird.class);
 
-    // 3/16-dicke Hitbox an einer der vier Block-Seiten, abhaengig von
-    // FACING + Open + Hinge. In 0..16-Skala.
-    private static final VoxelShape SOUTH_AABB = Block.makeCuboidShape(0, 0, 0, 16, 16, 3);
-    private static final VoxelShape NORTH_AABB = Block.makeCuboidShape(0, 0, 13, 16, 16, 16);
-    private static final VoxelShape WEST_AABB = Block.makeCuboidShape(13, 0, 0, 16, 16, 16);
-    private static final VoxelShape EAST_AABB = Block.makeCuboidShape(0, 0, 0, 3, 16, 16);
+    // 1.12-AABB-Tabelle 1:1 portiert: Tuer ist 1,5 Bloecke breit, ragt also
+    // um 0,5 Bloecke in den Nachbarblock. Das ist absichtlich -- die alte
+    // Hitbox blockt damit Right-Click-Placement im "Schwung-Block" der Tuer,
+    // sodass zwei Doppeltueren nicht beide LEFT-hinged ins gleiche Volumen
+    // gesetzt werden koennen. Werte in 0..16-Skala.
+    private static final VoxelShape SOUTH_L_AABB = Block.makeCuboidShape(0, 0, 0, 24, 16, 3);
+    private static final VoxelShape NORTH_L_AABB = Block.makeCuboidShape(0, 0, 13, 24, 16, 16);
+    private static final VoxelShape WEST_L_AABB = Block.makeCuboidShape(13, 0, 0, 16, 16, 24);
+    private static final VoxelShape EAST_L_AABB = Block.makeCuboidShape(0, 0, 0, 3, 16, 24);
+    private static final VoxelShape SOUTH_R_AABB = Block.makeCuboidShape(-8, 0, 0, 16, 16, 3);
+    private static final VoxelShape NORTH_R_AABB = Block.makeCuboidShape(-8, 0, 13, 16, 16, 16);
+    private static final VoxelShape WEST_R_AABB = Block.makeCuboidShape(13, 0, -8, 16, 16, 16);
+    private static final VoxelShape EAST_R_AABB = Block.makeCuboidShape(0, 0, -8, 3, 16, 16);
 
     private Item item;
 
@@ -96,26 +105,33 @@ public class TCBigDoor extends Block {
     @Override
     public VoxelShape getShape(final BlockState state, final IBlockReader world,
             final BlockPos pos, final ISelectionContext context) {
-        Direction facing = state.get(FACING);
-        // Wenn die Tuer offen ist, schwingt sie um 90 Grad in Richtung der
-        // Hinge -- das simulieren wir, indem wir die Hitbox auf die Seite
-        // versetzen, an der die Hinge sitzt.
-        if (state.get(OPEN)) {
-            final Direction rotated = state.get(HINGE) == DoorHingeSide.RIGHT
-                    ? facing.rotateY()
-                    : facing.rotateYCCW();
-            facing = rotated;
-        }
-        switch (facing) {
-            case NORTH:
-                return NORTH_AABB;
-            case SOUTH:
-                return SOUTH_AABB;
-            case WEST:
-                return WEST_AABB;
+        // 1:1-Port aus 1.12 BlockBigDoor.getBoundingBox: 4 Facings * 2 Hinges
+        // * 2 Open-States = 16 Kombinationen, alle auf 8 unterschiedliche
+        // 1,5-Block-AABBs gemappt. closed=!OPEN, rightHinge=HINGE==RIGHT.
+        final boolean closed = !state.get(OPEN);
+        final boolean rightHinge = state.get(HINGE) == DoorHingeSide.RIGHT;
+        switch (state.get(FACING)) {
             case EAST:
             default:
-                return EAST_AABB;
+                if (!closed && !rightHinge) return SOUTH_L_AABB;
+                else if (!closed && rightHinge) return NORTH_L_AABB;
+                else if (closed && !rightHinge) return EAST_L_AABB;
+                else return EAST_R_AABB;
+            case SOUTH:
+                if (!closed && !rightHinge) return WEST_L_AABB;
+                else if (!closed && rightHinge) return EAST_L_AABB;
+                else if (closed && !rightHinge) return SOUTH_R_AABB;
+                else return SOUTH_L_AABB;
+            case WEST:
+                if (!closed && !rightHinge) return NORTH_R_AABB;
+                else if (!closed && rightHinge) return SOUTH_R_AABB;
+                else if (closed && !rightHinge) return WEST_R_AABB;
+                else return WEST_L_AABB;
+            case NORTH:
+                if (!closed && !rightHinge) return EAST_R_AABB;
+                else if (!closed && rightHinge) return WEST_R_AABB;
+                else if (closed && !rightHinge) return NORTH_L_AABB;
+                else return NORTH_R_AABB;
         }
     }
 
@@ -140,19 +156,76 @@ public class TCBigDoor extends Block {
     @Override
     public void neighborChanged(final BlockState state, final World world, final BlockPos pos,
             final Block fromBlock, final BlockPos fromPos, final boolean isMoving) {
-        // Das untere Glied behandelt Redstone; die anderen beiden delegieren
-        // an den Lower-Block (so wie das Vanilla-DoorBlock fuer UPPER macht).
-        if (state.get(THIRD) != BigDoorThird.LOWER) {
-            final BlockPos lower = lowerPosOf(state, pos);
-            final BlockState lowerState = world.getBlockState(lower);
-            if (lowerState.getBlock() == this) {
-                lowerState.neighborChanged(world, lower, fromBlock, fromPos, isMoving);
+        // 1:1-Port aus 1.12 BlockDoor.neighborChanged: UPPER und MIDDLE
+        // pruefen Struktur-Integritaet und delegieren Redstone an LOWER;
+        // LOWER pruefst Untergrund + alle drei Glieder, dropped beim
+        // Wegbrechen, und schaltet Powered/Open synchron auf Redstone.
+        switch (state.get(THIRD)) {
+            case UPPER: {
+                final BlockPos middle = pos.down();
+                final BlockPos lower = pos.down(2);
+                final BlockState middleState = world.getBlockState(middle);
+                final BlockState lowerState = world.getBlockState(lower);
+                if (!(middleState.getBlock() instanceof TCBigDoor)
+                        || !(lowerState.getBlock() instanceof TCBigDoor)) {
+                    world.setBlockState(pos, Blocks.AIR.getDefaultState(), 35);
+                } else if (!(fromBlock instanceof TCBigDoor)) {
+                    middleState.neighborChanged(world, middle, fromBlock, fromPos, isMoving);
+                }
+                return;
+            }
+            case MIDDLE: {
+                final BlockPos lower = pos.down();
+                final BlockPos upper = pos.up();
+                final BlockState lowerState = world.getBlockState(lower);
+                final BlockState upperState = world.getBlockState(upper);
+                if (!(lowerState.getBlock() instanceof TCBigDoor)
+                        || !(upperState.getBlock() instanceof TCBigDoor)) {
+                    world.setBlockState(pos, Blocks.AIR.getDefaultState(), 35);
+                } else if (!(fromBlock instanceof TCBigDoor)) {
+                    lowerState.neighborChanged(world, lower, fromBlock, fromPos, isMoving);
+                }
+                return;
+            }
+            case LOWER:
+            default:
+                break;
+        }
+        // LOWER-Pfad: Struktur und Redstone.
+        final BlockPos middle = pos.up();
+        final BlockPos upper = pos.up(2);
+        final BlockState middleState = world.getBlockState(middle);
+        final BlockState upperState = world.getBlockState(upper);
+        boolean broken = false;
+        if (!(middleState.getBlock() instanceof TCBigDoor)) {
+            world.setBlockState(pos, Blocks.AIR.getDefaultState(), 35);
+            broken = true;
+        }
+        if (!(upperState.getBlock() instanceof TCBigDoor)) {
+            world.setBlockState(pos, Blocks.AIR.getDefaultState(), 35);
+            broken = true;
+        }
+        if (!world.getBlockState(pos.down()).getMaterial().isSolid()) {
+            world.setBlockState(pos, Blocks.AIR.getDefaultState(), 35);
+            broken = true;
+            if (middleState.getBlock() instanceof TCBigDoor) {
+                world.setBlockState(middle, Blocks.AIR.getDefaultState(), 35);
+            }
+            if (upperState.getBlock() instanceof TCBigDoor) {
+                world.setBlockState(upper, Blocks.AIR.getDefaultState(), 35);
+            }
+        }
+        if (broken) {
+            if (!world.isRemote && this.item != null) {
+                Block.spawnAsEntity(world, pos, new ItemStack(this.item));
             }
             return;
         }
-        final boolean powered = world.isBlockPowered(pos)
-                || world.isBlockPowered(pos.up()) || world.isBlockPowered(pos.up(2));
-        if (powered != state.get(POWERED) || powered != state.get(OPEN)) {
+        final boolean powered = world.isBlockPowered(pos) || world.isBlockPowered(middle)
+                || world.isBlockPowered(upper);
+        if (!(fromBlock instanceof TCBigDoor)
+                && (powered || fromBlock.getDefaultState().canProvidePower())
+                && powered != state.get(POWERED)) {
             BlockState s = state.with(POWERED, powered);
             if (powered != state.get(OPEN)) {
                 s = s.with(OPEN, powered);
@@ -250,9 +323,10 @@ public class TCBigDoor extends Block {
     @Nullable
     public BlockState getStateForPlacement(final BlockItemUseContext context) {
         // Das LOWER-Block-Placement uebernimmt der TCBigDoorItem; hier
-        // returnen wir den default als sanity-fallback.
+        // returnen wir den default mit FACING in Blickrichtung des Setzers
+        // (1.12-Original macht's genauso, kein .getOpposite()).
         return this.getDefaultState().with(FACING,
-                context.getPlacementHorizontalFacing().getOpposite());
+                context.getPlacementHorizontalFacing());
     }
 
     @Override
