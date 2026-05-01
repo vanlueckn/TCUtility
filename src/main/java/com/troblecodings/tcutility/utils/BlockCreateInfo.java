@@ -38,9 +38,22 @@ public class BlockCreateInfo {
                 .hardnessAndResistance(hardness)
                 .sound(soundtype)
                 .setLightLevel(state -> lightValue);
-        if (!fullblock) {
+        // 1.12.2 leitete "ist dieser Block opak" implizit aus dem Material ab
+        // -- Material.GLASS / ICE / etc. waren automatisch nicht-opak, was
+        // dafuer sorgte, dass adjacent floors *nicht* face-gecullt wurden.
+        // 1.16.5 ist Material.GLASS.isOpaque() jedoch true; ohne expliziten
+        // notSolid()-Aufruf cullt der Renderer die Up-Face des Blocks unter
+        // dem Lantern -- der Boden "verschwindet". Daher hier explizit
+        // notSolid() fuer typischerweise nicht-opake Materialien, oder
+        // wenn das JSON fullblock=false sagt.
+        if (!fullblock || isTransparentMaterial(material)) {
             props = props.notSolid();
         }
         return props;
+    }
+
+    private static boolean isTransparentMaterial(final Material mat) {
+        return mat == Material.GLASS || mat == Material.ICE || mat == Material.PACKED_ICE
+                || mat == Material.LEAVES || mat == Material.PLANTS;
     }
 }
