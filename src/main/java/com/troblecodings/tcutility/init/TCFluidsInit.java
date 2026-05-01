@@ -12,6 +12,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.troblecodings.tcutility.TCUtilityMain;
 import com.troblecodings.tcutility.fluids.TCFluidBlock;
+import com.troblecodings.tcutility.fluids.TCUpwardFlowingFluid;
 import com.troblecodings.tcutility.utils.FluidCreateInfo;
 import com.troblecodings.tcutility.utils.FluidProperties;
 
@@ -121,18 +122,28 @@ public final class TCFluidsInit {
         } else if (event.getRegistryKey().equals(ForgeRegistries.Keys.FLUIDS)) {
             event.register(ForgeRegistries.Keys.FLUIDS, helper -> {
                 for (final FluidEntry e : entries) {
+                    // 1.12.2-Verhalten in 1.14+ replizieren:
+                    //   - density < 0: Fluid spreadet aufwaerts (Steam o.ae.)
+                    //   - viscosity steuert Tickrate; Vanilla water=1000/tick5,
+                    //     lava=6000/tick30 -> tickRate ~ viscosity / 200
+                    final int tickRate = Math.max(1, e.info.viscosity / 200);
                     final ForgeFlowingFluid.Properties props = new ForgeFlowingFluid.Properties(
                             e.typeRef::get, e.sourceRef::get, e.flowingRef::get)
                                     .block(e.blockRef::get)
                                     .bucket(e.bucketRef::get)
                                     .slopeFindDistance(Math.max(1, e.info.flowLength))
-                                    .tickRate(20)
+                                    .tickRate(tickRate)
                                     .explosionResistance(100f);
-                    final ForgeFlowingFluid.Source source = new ForgeFlowingFluid.Source(props);
+                    final boolean upward = e.info.density < 0;
+                    final FlowingFluid source = upward
+                            ? new TCUpwardFlowingFluid.Source(props, e.info.flowLength)
+                            : new ForgeFlowingFluid.Source(props);
                     e.sourceRef.set(source);
                     helper.register(new ResourceLocation(TCUtilityMain.MODID, e.name), source);
 
-                    final ForgeFlowingFluid.Flowing flowing = new ForgeFlowingFluid.Flowing(props);
+                    final FlowingFluid flowing = upward
+                            ? new TCUpwardFlowingFluid.Flowing(props, e.info.flowLength)
+                            : new ForgeFlowingFluid.Flowing(props);
                     e.flowingRef.set(flowing);
                     helper.register(
                             new ResourceLocation(TCUtilityMain.MODID, e.name + "_flowing"),
