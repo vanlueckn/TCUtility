@@ -85,6 +85,21 @@ processResources {
     filesMatching("META-INF/mods.toml") {
         expand "version": project.version
     }
+
+    // Asset-Format-Migration (1.12.2 -> 1.14.4): Original-JSONs unter
+    // src/main/resources/ bleiben unveraendert, der Build-Output unter
+    // build/resources/main/ wird per Pipeline aus buildSrc/ konvertiert
+    // (Forge-Blockstates -> Vanilla-Format, Texture-Keys mit '#'-Prefix,
+    // Generator-Models pro substituiertem Variant). Neue Migrationsschritte
+    // landen in com.troblecodings.build.AssetMigrations und werden hier
+    // einfach an die Pipeline angehangen.
+    doLast {
+        def pipeline = new com.troblecodings.build.AssetMigrationPipeline()
+        pipeline.addAll(com.troblecodings.build.AssetMigrations.mc1_12_to_mc1_14())
+        pipeline.run(destinationDir)
+        pipeline.report.each { logger.info(it) }
+        logger.lifecycle("[asset-migrate] applied ${pipeline.report.size()} resource transforms")
+    }
 }
 
 jar {
