@@ -1,5 +1,6 @@
 package com.troblecodings.build
 
+import com.troblecodings.build.steps.FenceWallTagGenStep
 import com.troblecodings.build.steps.FixHashedTextureKeysStep
 import com.troblecodings.build.steps.FluidAssetGenStep
 import com.troblecodings.build.steps.ForgeMarkerBlockstateStep
@@ -28,6 +29,7 @@ class AssetMigrations {
                 new ForgeMarkerBlockstateStep(),
                 new VanillaTextureRefStep(),
                 new FluidAssetGenStep(),
+                new FenceWallTagGenStep(),
         ]
     }
 }
