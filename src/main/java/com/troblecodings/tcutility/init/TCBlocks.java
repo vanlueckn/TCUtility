@@ -32,6 +32,7 @@ import com.troblecodings.tcutility.items.TCDoorItem;
 import com.troblecodings.tcutility.items.TCSlabItem;
 import com.troblecodings.tcutility.utils.BlockCreateInfo;
 import com.troblecodings.tcutility.utils.BlockProperties;
+import com.troblecodings.tcutility.utils.MaterialKindRegistry;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BlockItem;
@@ -114,11 +115,13 @@ public final class TCBlocks {
                     spec.constructedBlock = block;
                     blocksToRegister.add(block);
                     blockEntries.add(Map.entry(spec.rl, block));
+                    MaterialKindRegistry.put(block, spec.info.kind);
                     helper.register(spec.rl, block);
                     if (spec.type == BlockTypes.GARAGE) {
                         final Block gate = new TCGarageGate(spec.info);
                         spec.gateBlock = gate;
                         blocksToRegister.add(gate);
+                        MaterialKindRegistry.put(gate, spec.info.kind);
                         final ResourceLocation gateRl = new ResourceLocation(
                                 TCUtilityMain.MODID, spec.rl.getPath() + "_gate");
                         blockEntries.add(Map.entry(gateRl, gate));

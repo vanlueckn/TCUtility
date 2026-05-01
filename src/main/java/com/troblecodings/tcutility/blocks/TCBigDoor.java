@@ -3,11 +3,12 @@ package com.troblecodings.tcutility.blocks;
 import javax.annotation.Nullable;
 
 import com.troblecodings.tcutility.utils.BlockCreateInfo;
+import com.troblecodings.tcutility.utils.MaterialKind;
+import com.troblecodings.tcutility.utils.MaterialKindRegistry;
 
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.material.Material;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -134,7 +135,7 @@ public class TCBigDoor extends Block {
     public InteractionResult use(final BlockState state, final Level world,
             final BlockPos pos, final Player player, final InteractionHand hand,
             final BlockHitResult hit) {
-        if (state.getMaterial() == Material.METAL) {
+        if (MaterialKindRegistry.get(state.getBlock()) == MaterialKind.METAL) {
             return InteractionResult.PASS;
         }
         final BlockPos lowerPos = lowerPosOf(state, pos);
@@ -201,7 +202,7 @@ public class TCBigDoor extends Block {
             world.setBlock(pos, Blocks.AIR.defaultBlockState(), 35);
             broken = true;
         }
-        if (!world.getBlockState(pos.below()).getMaterial().isSolid()) {
+        if (!world.getBlockState(pos.below()).isSolid()) {
             world.setBlock(pos, Blocks.AIR.defaultBlockState(), 35);
             broken = true;
             if (middleState.getBlock() instanceof TCBigDoor) {
@@ -310,11 +311,11 @@ public class TCBigDoor extends Block {
     }
 
     private static int openSoundEvent(final BlockState state) {
-        return state.getMaterial() == Material.METAL ? 1005 : 1006;
+        return MaterialKindRegistry.get(state.getBlock()) == MaterialKind.METAL ? 1005 : 1006;
     }
 
     private static int closeSoundEvent(final BlockState state) {
-        return state.getMaterial() == Material.METAL ? 1011 : 1012;
+        return MaterialKindRegistry.get(state.getBlock()) == MaterialKind.METAL ? 1011 : 1012;
     }
 
     @Nullable
@@ -353,7 +354,7 @@ public class TCBigDoor extends Block {
     }
 
     @Override
-    public boolean isPossibleToRespawnInThis() {
+    public boolean isPossibleToRespawnInThis(final BlockState state) {
         return false;
     }
 

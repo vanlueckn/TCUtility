@@ -55,19 +55,19 @@ public class TCBigDoorItem extends Item {
         // Verhalten aus 1.12.
         BlockPos pos = ctx.getClickedPos();
         final BlockState clicked = world.getBlockState(pos);
-        if (!clicked.getMaterial().isReplaceable()) {
+        if (!clicked.canBeReplaced()) {
             pos = pos.relative(ctx.getClickedFace());
         }
         final BlockPos middle = pos.above();
         final BlockPos upper = pos.above(2);
 
-        if (!world.getBlockState(pos).getMaterial().isReplaceable()
-                || !world.getBlockState(middle).getMaterial().isReplaceable()
-                || !world.getBlockState(upper).getMaterial().isReplaceable()) {
+        if (!world.getBlockState(pos).canBeReplaced()
+                || !world.getBlockState(middle).canBeReplaced()
+                || !world.getBlockState(upper).canBeReplaced()) {
             return InteractionResult.FAIL;
         }
         // Solider Untergrund noetig.
-        if (!world.getBlockState(pos.below()).getMaterial().isSolid()) {
+        if (!world.getBlockState(pos.below()).isSolid()) {
             return InteractionResult.FAIL;
         }
         if (!player.mayUseItemAt(pos, ctx.getClickedFace(), stack)) {

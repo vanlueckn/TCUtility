@@ -3,11 +3,12 @@ package com.troblecodings.tcutility.blocks;
 import javax.annotation.Nullable;
 
 import com.troblecodings.tcutility.utils.BlockCreateInfo;
+import com.troblecodings.tcutility.utils.MaterialKind;
+import com.troblecodings.tcutility.utils.MaterialKindRegistry;
 
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.material.Material;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
@@ -59,7 +60,7 @@ public class TCGarageDoor extends Block {
     public InteractionResult use(final BlockState state,
             final net.minecraft.world.level.Level world, final BlockPos pos, final Player player,
             final InteractionHand hand, final BlockHitResult hit) {
-        if (state.getMaterial() == Material.METAL) {
+        if (MaterialKindRegistry.get(state.getBlock()) == MaterialKind.METAL) {
             return InteractionResult.PASS;
         }
         toggleAt(world, pos, state);
@@ -195,7 +196,7 @@ public class TCGarageDoor extends Block {
 
     private static int soundFor(final BlockState state, final boolean opening) {
         // 1005/1006 = open wood/iron, 1011/1012 = close wood/iron in 1.14.4
-        if (state.getMaterial() == Material.METAL) {
+        if (MaterialKindRegistry.get(state.getBlock()) == MaterialKind.METAL) {
             return opening ? 1005 : 1011;
         }
         return opening ? 1006 : 1012;

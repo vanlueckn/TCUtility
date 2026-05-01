@@ -25,7 +25,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.FlowingFluid;
-import net.minecraft.world.level.material.Material;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fluids.FluidType;
@@ -143,7 +143,11 @@ public final class TCFluidsInit {
             event.register(ForgeRegistries.Keys.BLOCKS, helper -> {
                 for (final FluidEntry e : entries) {
                     final TCFluidBlock block = new TCFluidBlock(e.sourceRef::get,
-                            BlockBehaviour.Properties.of(Material.WATER)
+                            BlockBehaviour.Properties.of()
+                                    .mapColor(MapColor.WATER)
+                                    .replaceable()
+                                    .pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY)
+                                    .liquid()
                                     .noCollission()
                                     .strength(100f)
                                     .noLootTable()

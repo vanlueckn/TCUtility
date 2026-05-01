@@ -1,59 +1,50 @@
 package com.troblecodings.tcutility.blocks;
 
 import com.troblecodings.tcutility.utils.BlockCreateInfo;
+import com.troblecodings.tcutility.utils.MaterialKind;
 
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.StairBlock;
-import net.minecraft.world.level.material.Material;
 
 public class TCStairs extends StairBlock {
 
     public TCStairs(final BlockCreateInfo blockInfo) {
-        super(() -> stateForMaterial(blockInfo.material), blockInfo.toNonSolidProperties());
+        super(stateForKind(blockInfo.kind), blockInfo.toNonSolidProperties());
     }
 
     /**
-     * StairBlock erwartet einen "Parent-Block-State" -- den Block, dessen
-     * Pickaxe-/Sound-/Drop-Verhalten die Treppe spiegeln soll. Aus dem
-     * Material aus der JSON-Definition wird ein passender Vanilla-Block
-     * abgeleitet; der Default fuer unbekannte Materialien bleibt
-     * Eichenbretter.
+     * StairBlock erwartet einen Parent-Block-State, dessen Pickaxe-/Sound-/Drop-Verhalten die
+     * Treppe spiegeln soll. Aus dem JSON-Material wird ein passender Vanilla-Block abgeleitet;
+     * Default fuer unbekannte Materialien bleibt Eichenbretter.
      */
-    private static BlockState stateForMaterial(final Material mat) {
-        if (mat == Material.METAL) {
-            return Blocks.IRON_BLOCK.defaultBlockState();
+    private static BlockState stateForKind(final MaterialKind kind) {
+        switch (kind) {
+            case METAL:
+                return Blocks.IRON_BLOCK.defaultBlockState();
+            case STONE:
+                return Blocks.STONE.defaultBlockState();
+            case GLASS:
+                return Blocks.GLASS.defaultBlockState();
+            case SAND:
+                return Blocks.SAND.defaultBlockState();
+            case CLAY:
+                return Blocks.CLAY.defaultBlockState();
+            case SNOW:
+                return Blocks.SNOW_BLOCK.defaultBlockState();
+            case ICE:
+            case ICE_SOLID:
+                return Blocks.ICE.defaultBlockState();
+            case WOOL:
+                return Blocks.WHITE_WOOL.defaultBlockState();
+            case DIRT:
+                return Blocks.DIRT.defaultBlockState();
+            case GRASS:
+                return Blocks.GRASS_BLOCK.defaultBlockState();
+            case HEAVY_METAL:
+                return Blocks.ANVIL.defaultBlockState();
+            default:
+                return Blocks.OAK_PLANKS.defaultBlockState();
         }
-        if (mat == Material.STONE) {
-            return Blocks.STONE.defaultBlockState();
-        }
-        if (mat == Material.GLASS) {
-            return Blocks.GLASS.defaultBlockState();
-        }
-        if (mat == Material.SAND) {
-            return Blocks.SAND.defaultBlockState();
-        }
-        if (mat == Material.CLAY) {
-            return Blocks.CLAY.defaultBlockState();
-        }
-        if (mat == Material.SNOW || mat == Material.SNOW) {
-            return Blocks.SNOW_BLOCK.defaultBlockState();
-        }
-        if (mat == Material.ICE || mat == Material.ICE_SOLID) {
-            return Blocks.ICE.defaultBlockState();
-        }
-        if (mat == Material.WOOL) {
-            return Blocks.WHITE_WOOL.defaultBlockState();
-        }
-        if (mat == Material.DIRT) {
-            return Blocks.DIRT.defaultBlockState();
-        }
-        if (mat == Material.GRASS) {
-            return Blocks.GRASS_BLOCK.defaultBlockState();
-        }
-        if (mat == Material.HEAVY_METAL) {
-            return Blocks.ANVIL.defaultBlockState();
-        }
-        return Blocks.OAK_PLANKS.defaultBlockState();
     }
 }

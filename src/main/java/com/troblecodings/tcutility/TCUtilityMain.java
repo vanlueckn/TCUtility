@@ -40,7 +40,7 @@ public class TCUtilityMain {
         // 1.19's modlauncher findet @Mod.EventBusSubscriber-Annotationen in
         // Subpackages nicht zuverlaessig auto-discovern -- daher manuell.
         final var modBus = FMLJavaModLoadingContext.get().getModEventBus();
-        modBus.register(TCTabs.class);
+        TCTabs.REGISTRY.register(modBus);
         modBus.register(TCBlocks.class);
         modBus.register(TCItems.class);
         modBus.register(TCFluidsInit.class);

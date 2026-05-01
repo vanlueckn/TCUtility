@@ -1,8 +1,9 @@
 package com.troblecodings.tcutility.init;
 
 import com.troblecodings.tcutility.TCUtilityMain;
+import com.troblecodings.tcutility.utils.MaterialKind;
+import com.troblecodings.tcutility.utils.MaterialKindRegistry;
 
-import net.minecraft.world.level.material.Material;
 import net.minecraft.client.renderer.BiomeColors;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterColorHandlersEvent;
@@ -10,11 +11,10 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * 1.14.4-Port: ModelLoader.setCustomModelResourceLocation und State-Mapper-API
- * gibt es nicht mehr; Item-/Blockstate-Models werden automatisch ueber die
- * blockstate-/item-model-Jsons aufgeloest. Diese Klasse haelt nur noch die
- * Color-Handler fuer Bloecke mit Material.GRASS (entspricht dem alten
- * Material.GRASS aus 1.12.2).
+ * Client-seitige ColorHandler-Registrierung fuer alle Bloecke, deren JSON-Material auf "grass"
+ * (intern {@link MaterialKind#GRASS}) zeigt: ohne den dynamischen Tint waeren gefaerbte
+ * Grass-Bloecke biome-unabhaengig knallgruen statt biome-spezifisch eingefaerbt. 1.20 entfernt
+ * vanilla {@code Material}, daher wird der Vergleich auf den mod-eigenen MaterialKind verlagert.
  */
 @Mod.EventBusSubscriber(modid = TCUtilityMain.MODID,
         bus = Mod.EventBusSubscriber.Bus.MOD,
@@ -27,7 +27,7 @@ public final class TCModels {
     @SubscribeEvent
     public static void registerBlockColor(final RegisterColorHandlersEvent.Block event) {
         TCBlocks.blocksToRegister.forEach(block -> {
-            if (block.defaultBlockState().getMaterial() == Material.GRASS) {
+            if (MaterialKindRegistry.get(block) == MaterialKind.GRASS) {
                 event.getBlockColors().register((state, worldIn, pos, tintIndex) -> {
                     if (worldIn == null || pos == null) {
                         return 0xFF00FF00;
@@ -41,7 +41,7 @@ public final class TCModels {
     @SubscribeEvent
     public static void registerItemColor(final RegisterColorHandlersEvent.Item event) {
         TCBlocks.blocksToRegister.forEach(block -> {
-            if (block.defaultBlockState().getMaterial() == Material.GRASS) {
+            if (MaterialKindRegistry.get(block) == MaterialKind.GRASS) {
                 event.getItemColors().register((stack, tintIndex) -> 0xFF5E7A39,
                         block.asItem());
             }

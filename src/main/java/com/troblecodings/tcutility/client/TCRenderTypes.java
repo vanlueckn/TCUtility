@@ -18,9 +18,10 @@ import com.troblecodings.tcutility.blocks.TCWall;
 import com.troblecodings.tcutility.blocks.TCWindow;
 import com.troblecodings.tcutility.init.TCBlocks;
 import com.troblecodings.tcutility.init.TCFluidsInit;
+import com.troblecodings.tcutility.utils.MaterialKind;
+import com.troblecodings.tcutility.utils.MaterialKindRegistry;
 
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.material.Material;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraftforge.api.distmarker.Dist;
@@ -29,12 +30,12 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
 /**
- * Client-seitige Render-Layer-Registrierung. Loest die 1.14.4-Lösung ab, bei
- * der jeder Block in {@code getRenderLayer()} sein eigenes
- * {@code BlockRenderLayer} zurueckgegeben hat -- das gibt's ab 1.15 nicht
- * mehr. Stattdessen wird hier pro registriertem Block der passende
- * {@link RenderType} hinterlegt: Blocktyp + Material entscheiden gemeinsam,
- * weil eine Holztuer CUTOUT, aber eine Glastuer TRANSLUCENT braucht.
+ * Client-seitige Render-Layer-Registrierung. Loest die 1.14.4-Lösung ab, bei der jeder Block in
+ * {@code getRenderLayer()} sein eigenes {@code BlockRenderLayer} zurueckgegeben hat -- das gibt's
+ * ab 1.15 nicht mehr. Stattdessen wird hier pro registriertem Block der passende {@link RenderType}
+ * hinterlegt: Blocktyp + MaterialKind entscheiden gemeinsam, weil eine Holztuer CUTOUT, aber eine
+ * Glastuer TRANSLUCENT braucht. 1.20: vanilla {@code Material} ist entfernt; wir lesen den
+ * mod-internen MaterialKind aus {@link MaterialKindRegistry}.
  */
 @Mod.EventBusSubscriber(modid = TCUtilityMain.MODID, bus = Mod.EventBusSubscriber.Bus.MOD,
         value = Dist.CLIENT)
@@ -54,18 +55,13 @@ public final class TCRenderTypes {
     }
 
     private static RenderType layerFor(final Block block) {
-        final Material mat = block.defaultBlockState().getMaterial();
-        if (mat == Material.GLASS || mat == Material.ICE || mat == Material.ICE_SOLID) {
+        final MaterialKind kind = MaterialKindRegistry.get(block);
+        if (kind == MaterialKind.GLASS || kind == MaterialKind.ICE || kind == MaterialKind.ICE_SOLID) {
             return RenderType.translucent();
         }
-        // Bloecke mit ausgefraester / nicht-rechteckiger Geometrie brauchen
-        // einen CUTOUT-Layer, damit die Texturen-Alpha sauber ausgeschnitten
-        // werden -- unabhaengig vom Material, das zB. bei Holztueren OPAQUE
-        // ist und ohne diesen Spezialfall mit SOLID gerendert wuerde. Wir
-        // zaehlen hier alle TC-Klassen auf, deren Modelle praktisch nie
-        // volle Cubes sind; Pipes (TCCubeRotation) zaehlen mit dazu, weil
-        // Content-Pack-Models dort haeufig schmale Geometrien definieren,
-        // deren transparente Texturanteile sonst schwarz gerendert werden.
+        // Bloecke mit ausgefraester / nicht-rechteckiger Geometrie brauchen einen CUTOUT-Layer,
+        // damit die Texturen-Alpha sauber ausgeschnitten werden -- unabhaengig vom MaterialKind,
+        // das zB. bei Holztueren OPAQUE ist und ohne diesen Spezialfall mit SOLID gerendert wuerde.
         if (block instanceof TCBigDoor || block instanceof TCDoor
                 || block instanceof TCTrapDoor || block instanceof TCFenceGate
                 || block instanceof TCGarageDoor || block instanceof TCGarageGate
@@ -76,11 +72,8 @@ public final class TCRenderTypes {
                 || block instanceof TCCubeRotationAll) {
             return RenderType.cutout();
         }
-        if (mat == Material.LEAVES || mat == Material.PLANT) {
+        if (kind == MaterialKind.LEAVES || kind == MaterialKind.PLANT) {
             return RenderType.cutoutMipped();
-        }
-        if (!mat.isSolidBlocking()) {
-            return RenderType.cutout();
         }
         return RenderType.solid();
     }
