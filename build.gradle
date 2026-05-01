@@ -1,14 +1,12 @@
 buildscript {
     repositories {
-        maven { url = 'https://maven.minecraftforge.net/' }
-		maven {
-      		url = "https://plugins.gradle.org/m2/"
-    	}
+        maven { url = 'https://files.minecraftforge.net/maven' }
+        maven { url "https://plugins.gradle.org/m2/" }
         jcenter()
         mavenCentral()
     }
     dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:5.1+'
+        classpath 'net.minecraftforge.gradle:ForgeGradle:3.+'
         classpath "gradle.plugin.com.matthewprenger:CurseGradle:1.4.0"
     }
 }
@@ -46,51 +44,47 @@ curseforge {
 
 version = ver
 group = 'com.troblecodings'
-archivesBaseName = 'TCUtility-1.12.2'
+archivesBaseName = 'TCUtility-1.14.4'
 
 sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
 
 minecraft {
-    mappings channel: 'snapshot', version: '20171003-1.12'
+    mappings channel: 'snapshot', version: '20191002-1.14.3'
     runs {
         client {
             workingDirectory project.file('run')
             property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
             property 'forge.logging.console.level', 'debug'
+            mods {
+                tcutility {
+                    source sourceSets.main
+                }
+            }
         }
 
         server {
+            workingDirectory project.file('run')
             property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
             property 'forge.logging.console.level', 'debug'
+            mods {
+                tcutility {
+                    source sourceSets.main
+                }
+            }
         }
     }
 }
 
-dependencies {   
-    minecraft 'net.minecraftforge:forge:1.12.2-14.23.5.2860'
-    testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.14.4-28.2.28'
 }
-
-test {
-    useJUnitPlatform {
-    	includeEngines("junit-jupiter")
-    }
-}
-
-// Workaround fuer FG 5.1 + 1.12.2: classes und resources in EIN Verzeichnis schreiben.
-// FG 5.1 setzt build/classes/java/main und build/resources/main als zwei separate
-// Classpath-Eintraege; FML's mod scanner sieht sie als zwei "Mod-Container", findet
-// die @Mod-Klasse in classes/java/main ohne mcmod.info nebenan und registriert die Mod
-// mit Default-Name/-Version (resource pack heisst dann "tcutility" statt "TC Utility",
-// Texturen/Translations nicht im Resource-Pack-Namen).
-sourceSets.main.output.resourcesDir = sourceSets.main.java.destinationDirectory
 
 processResources {
-	inputs.property "version", project.version
+    inputs.property "version", project.version
 
-	filesMatching("mcmod.info") {
-		expand "version": project.version, "mcversion": "1.12.2"
-	}
+    filesMatching("META-INF/mods.toml") {
+        expand "version": project.version
+    }
 }
 
 jar {
@@ -108,66 +102,3 @@ jar {
 }
 
 jar.finalizedBy('reobfJar')
-
-// Workaround: ForgeGradle 5.1+ verwendet mergetool-1.0.13-forge.jar, welches eine
-// modifizierte Side.class mit dritter Konstante BUKKIT in den lokal gebauten Forge-Jar
-// merged. NetworkRegistry.<init> populiert seine channels-EnumMap aber nur fuer
-// CLIENT/SERVER -> NPE in newChannel beim Iterieren ueber Side.values() bei BUKKIT,
-// crashed waehrend FMLContainer.modConstruction. Wir ersetzen Side.class im lokal
-// gebauten mapped Forge-Jar durch die saubere Variante aus forge-*-universal.jar.
-// Wirkt nur lokal beim Dev-Build; Production-Mod-Jars sind nicht betroffen.
-def fixForgeSideAction = {
-    def forgeVer = '1.12.2-14.23.5.2860'
-    def mcpVer = '20171003-1.12'
-    def gradleHome = gradle.gradleUserHomeDir
-    def mappedJar = file("${gradleHome}/caches/forge_gradle/minecraft_user_repo/net/minecraftforge/forge/${forgeVer}_mapped_snapshot_${mcpVer}/forge-${forgeVer}_mapped_snapshot_${mcpVer}.jar")
-    def universalJar = file("${gradleHome}/caches/forge_gradle/maven_downloader/net/minecraftforge/forge/${forgeVer}/forge-${forgeVer}-universal.jar")
-    if (!mappedJar.exists() || !universalJar.exists()) return
-
-    def sideEntry = 'net/minecraftforge/fml/relauncher/Side.class'
-    byte[] cleanSide = null
-    new java.util.zip.ZipFile(universalJar).withCloseable { zf ->
-        def e = zf.getEntry(sideEntry)
-        if (e) cleanSide = zf.getInputStream(e).bytes
-    }
-    if (cleanSide == null) return
-
-    byte[] currentSide = null
-    new java.util.zip.ZipFile(mappedJar).withCloseable { zf ->
-        def e = zf.getEntry(sideEntry)
-        if (e) currentSide = zf.getInputStream(e).bytes
-    }
-    if (currentSide != null && java.util.Arrays.equals(currentSide, cleanSide)) return
-
-    logger.lifecycle("[fixForgeSide] Patche Side.class im lokal gebauten Forge-Jar (mergetool-1.0.13 BUKKIT-Workaround)")
-    def tmp = new File(mappedJar.parent, "${mappedJar.name}.fix-tmp")
-    tmp.delete()
-    new java.util.zip.ZipFile(mappedJar).withCloseable { src ->
-        new java.util.zip.ZipOutputStream(new BufferedOutputStream(new FileOutputStream(tmp))).withCloseable { zos ->
-            byte[] buf = new byte[8192]
-            def entries = src.entries()
-            while (entries.hasMoreElements()) {
-                def entry = entries.nextElement()
-                def newEntry = new java.util.zip.ZipEntry(entry.name)
-                if (entry.time != -1L) newEntry.time = entry.time
-                zos.putNextEntry(newEntry)
-                if (entry.name == sideEntry) {
-                    zos.write(cleanSide)
-                } else if (!entry.directory) {
-                    src.getInputStream(entry).withCloseable { is ->
-                        int n
-                        while ((n = is.read(buf)) > 0) zos.write(buf, 0, n)
-                    }
-                }
-                zos.closeEntry()
-            }
-        }
-    }
-    if (!mappedJar.delete() || !tmp.renameTo(mappedJar)) {
-        throw new GradleException("[fixForgeSide] Konnte gepatchte Forge-Jar nicht einsetzen ($mappedJar)")
-    }
-}
-
-tasks.matching { it.name in ['runClient', 'runServer'] }.all { task ->
-    task.doFirst { fixForgeSideAction() }
-}

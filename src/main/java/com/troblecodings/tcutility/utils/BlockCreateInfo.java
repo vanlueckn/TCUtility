@@ -2,6 +2,7 @@ package com.troblecodings.tcutility.utils;
 
 import java.util.List;
 
+import net.minecraft.block.Block;
 import net.minecraft.block.SoundType;
 import net.minecraft.block.material.Material;
 
@@ -25,5 +26,17 @@ public class BlockCreateInfo {
         this.lightValue = lightValue;
         this.box = box;
         this.fullblock = fullblock;
+    }
+
+    public Block.Properties toProperties() {
+        // 1.14.4-28.2.28: notSolid() / nonOpaque() ist nicht verfuegbar; das
+        // fullblock-Flag wird hier nur in den Properties weggetragen, der Block
+        // bleibt vorerst opaque. Das laesst sich pro Block-Subklasse via
+        // Block.Properties#noOcclusion (sobald verfuegbar) oder eigene Override
+        // nachschaerfen.
+        return Block.Properties.create(material)
+                .hardnessAndResistance(hardness)
+                .sound(soundtype)
+                .lightValue(lightValue);
     }
 }

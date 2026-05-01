@@ -16,20 +16,29 @@ import com.troblecodings.tcutility.utils.FluidCreateInfo;
 import com.troblecodings.tcutility.utils.FluidProperties;
 
 import net.minecraft.block.Block;
+import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemBlock;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.event.RegistryEvent;
-import net.minecraftforge.fluids.FluidRegistry;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.IForgeRegistry;
 
+/**
+ * 1.14.4-Port: FluidRegistry und BlockFluidClassic gibt es nicht mehr; eine
+ * vollstaendige Umstellung auf {@link net.minecraftforge.fluids.ForgeFlowingFluid}
+ * mit Source / Flowing / FlowingFluidBlock / Bucket-Item ist noch offen.
+ * Aktuell werden die in JSON definierten Fluids als statische Bloecke registriert,
+ * damit das JSON-Schema 1:1 erhalten bleibt und Content Packs weiterhin geladen
+ * werden koennen.
+ */
+@Mod.EventBusSubscriber(modid = TCUtilityMain.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class TCFluidsInit {
 
     private TCFluidsInit() {
     }
 
-    public static ArrayList<Block> blocksToRegister = new ArrayList<>();
+    public static final ArrayList<Block> blocksToRegister = new ArrayList<>();
 
     @SubscribeEvent
     public static void registerBlock(final RegistryEvent.Register<Block> event) {
@@ -40,11 +49,16 @@ public final class TCFluidsInit {
     @SubscribeEvent
     public static void registerItem(final RegistryEvent.Register<Item> event) {
         final IForgeRegistry<Item> registry = event.getRegistry();
-        blocksToRegister.forEach(block -> {
-            if (!block.toString().contains("door")) {
-                registry.register(new ItemBlock(block).setRegistryName(block.getRegistryName()));
+        for (final Block block : blocksToRegister) {
+            final ResourceLocation rl = block.getRegistryName();
+            if (rl == null) {
+                continue;
             }
-        });
+            final BlockItem item = new BlockItem(block,
+                    new Item.Properties().group(TCTabs.SPECIAL));
+            item.setRegistryName(rl);
+            registry.register(item);
+        }
     }
 
     public static void initJsonFiles() {
@@ -52,9 +66,7 @@ public final class TCFluidsInit {
 
         for (final Entry<String, FluidProperties> fluidsEntry : fluids.entrySet()) {
             final String objectname = fluidsEntry.getKey();
-
             final FluidProperties property = fluidsEntry.getValue();
-
             final FluidCreateInfo fluidInfo = property.getFluidInfo();
 
             final TCFluids fluid = new TCFluids(objectname,
@@ -62,15 +74,8 @@ public final class TCFluidsInit {
                     new ResourceLocation(TCUtilityMain.MODID, "blocks/" + objectname + "_flow"),
                     fluidInfo);
 
-            
-            FluidRegistry.registerFluid(fluid);
-            
-
-            FluidRegistry.addBucketForFluid(fluid);
-
-            TCFluidBlock block = new TCFluidBlock(fluid);
+            final TCFluidBlock block = new TCFluidBlock(fluid);
             block.setRegistryName(new ResourceLocation(TCUtilityMain.MODID, objectname));
-            block.setUnlocalizedName(objectname);
             blocksToRegister.add(block);
         }
     }
@@ -85,10 +90,11 @@ public final class TCFluidsInit {
             entrySet.forEach(entry -> {
                 final Map<String, FluidProperties> json =
                         gson.fromJson(entry.getValue(), typeOfHashMap);
-                properties.putAll(json);
+                if (json != null) {
+                    properties.putAll(json);
+                }
             });
         }
         return properties;
     }
-
 }

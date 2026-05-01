@@ -1,4 +1,4 @@
 [submodule "contentPackLib"]
 	path = contentPackLib
 	url = https://github.com/vanlueckn/contentPackLib
-	branch = 1.12.2-failsafe-paths
+	branch = 1.14.4-28.2.28-compat
