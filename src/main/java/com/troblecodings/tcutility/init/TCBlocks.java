@@ -126,37 +126,29 @@ public final class TCBlocks {
                         helper.register(gateRl, gate);
                     }
                 }
-                TCUtilityMain.LOG.info("[TCBlocks] Registered {} blocks", blocksToRegister.size());
             });
         } else if (event.getRegistryKey().equals(ForgeRegistries.Keys.ITEMS)) {
             event.register(ForgeRegistries.Keys.ITEMS, helper -> {
-                int registered = 0;
                 for (final BlockSpec spec : blockSpecs) {
                     final Block block = spec.constructedBlock;
                     if (block == null) {
                         continue;
                     }
                     if (block instanceof TCDoor) {
-                        final TCDoorItem dooritem = new TCDoorItem(block);
                         helper.register(new ResourceLocation(TCUtilityMain.MODID,
-                                "door_" + spec.objectName), dooritem);
-                        registered++;
+                                "door_" + spec.objectName), new TCDoorItem(block));
                         continue;
                     }
                     if (block instanceof TCBigDoor) {
-                        final TCBigDoorItem bigdooritem = new TCBigDoorItem(block);
                         helper.register(new ResourceLocation(TCUtilityMain.MODID,
-                                "bigdoor_" + spec.objectName), bigdooritem);
-                        registered++;
+                                "bigdoor_" + spec.objectName), new TCBigDoorItem(block));
                         continue;
                     }
                     final Item.Properties props = new Item.Properties().tab(groupFor(block));
                     final BlockItem blockItem = (block instanceof TCSlab) ? new TCSlabItem(block)
                             : new BlockItem(block, props);
                     helper.register(spec.rl, blockItem);
-                    registered++;
                 }
-                TCUtilityMain.LOG.info("[TCBlocks] Registered {} BlockItems", registered);
             });
         }
     }

@@ -117,8 +117,6 @@ public final class TCFluidsInit {
                     helper.register(new ResourceLocation(TCUtilityMain.MODID, e.name + "_type"),
                             type);
                 }
-                TCUtilityMain.LOG.info("[TCFluidsInit] Registered {} fluid types",
-                        entries.size());
             });
         } else if (event.getRegistryKey().equals(ForgeRegistries.Keys.FLUIDS)) {
             event.register(ForgeRegistries.Keys.FLUIDS, helper -> {
@@ -140,8 +138,6 @@ public final class TCFluidsInit {
                             new ResourceLocation(TCUtilityMain.MODID, e.name + "_flowing"),
                             flowing);
                 }
-                TCUtilityMain.LOG.info("[TCFluidsInit] Registered {} source/flowing fluid pairs",
-                        entries.size());
             });
         } else if (event.getRegistryKey().equals(ForgeRegistries.Keys.BLOCKS)) {
             event.register(ForgeRegistries.Keys.BLOCKS, helper -> {
@@ -157,8 +153,6 @@ public final class TCFluidsInit {
                     blocksToRegister.add(block);
                     helper.register(new ResourceLocation(TCUtilityMain.MODID, e.name), block);
                 }
-                TCUtilityMain.LOG.info("[TCFluidsInit] Registered {} fluid blocks",
-                        entries.size());
             });
         } else if (event.getRegistryKey().equals(ForgeRegistries.Keys.ITEMS)) {
             event.register(ForgeRegistries.Keys.ITEMS, helper -> {
@@ -171,8 +165,6 @@ public final class TCFluidsInit {
                             new ResourceLocation(TCUtilityMain.MODID, e.name + "_bucket"),
                             bucket);
                 }
-                TCUtilityMain.LOG.info("[TCFluidsInit] Registered {} bucket items",
-                        entries.size());
             });
         }
     }

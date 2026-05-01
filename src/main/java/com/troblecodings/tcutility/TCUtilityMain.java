@@ -14,6 +14,7 @@ import com.troblecodings.tcutility.init.TCTabs;
 
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
 @Mod(TCUtilityMain.MODID)
 public class TCUtilityMain {
@@ -22,43 +23,30 @@ public class TCUtilityMain {
     public static final Logger LOG = LogManager.getLogger();
     public static ContentPackHandler fileHandler;
 
-    static {
-        System.out.println("!!!TCUTILITY!!! TCUtilityMain class loaded (static init)");
-    }
-
     public TCUtilityMain() {
-        System.out.println("!!!TCUTILITY!!! Mod constructor entered");
-        try {
-            LOG.info("[TCUtility] Mod constructor starting");
+        fileHandler = new ContentPackHandler(MODID, "assets/" + MODID, LOG,
+                name -> getRessourceLocation(name).orElse(null));
 
-            fileHandler = new ContentPackHandler(MODID, "assets/" + MODID, LOG,
-                    name -> getRessourceLocation(name).orElse(null));
-            LOG.info("[TCUtility] ContentPackHandler created");
+        // Force-load TCTabs damit die Custom-Creative-Tabs in TABS[] landen,
+        // bevor irgendein Item via Properties.tab() darauf zeigt.
+        TCTabs.touch();
 
-            // Force-load TCTabs vor jedem Item.Properties.tab()-Call.
-            TCTabs.touch();
+        // Block-/Item-/Fluid-Konstruktion ist seit 1.19 strikt an die
+        // jeweiligen RegisterEvents gebunden (frozen registries) -- hier nur
+        // die JSON-Parse-Phase, die echten Instanzen entstehen in den
+        // Subscribern.
+        TCFluidsInit.initJsonFiles();
+        TCItems.init();
+        TCBlocks.init();
+        TCBlocks.initJsonFiles();
+        TCItems.initJsonFiles();
 
-            TCFluidsInit.initJsonFiles();
-            TCItems.init();
-            TCBlocks.init();
-            TCBlocks.initJsonFiles();
-            TCItems.initJsonFiles();
-            LOG.info("[TCUtility] Pipeline parsed JSON specs; "
-                    + "all Block/Item construction is deferred to RegisterEvent");
-
-            final var modBus = net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext.get()
-                    .getModEventBus();
-            modBus.register(TCBlocks.class);
-            modBus.register(TCItems.class);
-            modBus.register(TCFluidsInit.class);
-            LOG.info("[TCUtility] Subscribed TCBlocks/TCItems/TCFluidsInit on mod bus");
-            System.out.println("!!!TCUTILITY!!! Mod constructor completed successfully");
-        } catch (final Throwable t) {
-            System.out.println("!!!TCUTILITY!!! Mod constructor FAILED: " + t);
-            t.printStackTrace(System.out);
-            LOG.error("[TCUtility] Mod constructor failed", t);
-            throw t;
-        }
+        // 1.19's modlauncher findet @Mod.EventBusSubscriber-Annotationen in
+        // Subpackages nicht zuverlaessig auto-discovern -- daher manuell.
+        final var modBus = FMLJavaModLoadingContext.get().getModEventBus();
+        modBus.register(TCBlocks.class);
+        modBus.register(TCItems.class);
+        modBus.register(TCFluidsInit.class);
     }
 
     /**

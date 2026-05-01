@@ -100,8 +100,6 @@ public final class TCItems {
                 final Item item = new Item(new Item.Properties().tab(TCTabs.ITEMS));
                 helper.register(new ResourceLocation(TCUtilityMain.MODID, itemName), item);
             }
-            TCUtilityMain.LOG.info("[TCItems] Registered {} armor pieces, {} plain items",
-                    armorSpecs.size(), itemNames.size());
         });
     }
 

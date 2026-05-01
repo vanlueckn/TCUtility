@@ -83,24 +83,16 @@ public final class TCTabs {
 
         @Override
         public void fillItemList(final NonNullList<ItemStack> list) {
-            int seen = 0;
-            int matched = 0;
             for (final Item item : ForgeRegistries.ITEMS.getValues()) {
                 final net.minecraft.resources.ResourceLocation rl = ForgeRegistries.ITEMS
                         .getKey(item);
                 if (rl == null || !TCUtilityMain.MODID.equals(rl.getNamespace())) {
                     continue;
                 }
-                seen++;
-                if (!matches(item)) {
-                    continue;
+                if (matches(item)) {
+                    list.add(new ItemStack(item));
                 }
-                matched++;
-                list.add(new ItemStack(item));
             }
-            TCUtilityMain.LOG.info(
-                    "[TCTabs] fillItemList for {} -- saw {} TC-namespaced items, matched {}",
-                    kind, seen, matched);
         }
 
         private boolean matches(final Item item) {
