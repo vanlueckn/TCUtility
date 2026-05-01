@@ -1,9 +1,6 @@
 package com.troblecodings.tcutility.init;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,74 +28,81 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegisterEvent;
 
+/**
+ * 1.19.2: {@code Item.<init>} ruft (wie Block.<init>) intern
+ * {@code createIntrusiveHolder} und scheitert ausserhalb des ITEMS-
+ * {@link RegisterEvent}-Frames an einer eingefrorenen Registry. Wir
+ * sammeln daher in {@link #initJsonFiles} nur Spezifikationen
+ * (Armor-Material/Slot bzw. plain-Item-Name) und konstruieren die
+ * Items erst im {@link #onRegister}-Handler.
+ */
 public final class TCItems {
 
     private TCItems() {
     }
 
-    /** (ResourceLocation, Item)-Tupel, die im RegisterEvent eingespielt werden. */
-    public static final List<Entry<ResourceLocation, Item>> itemEntries = new ArrayList<>();
+    private static final class ArmorSpec {
+        final String registryName;
+        final ArmorMaterial material;
+        final EquipmentSlot slot;
 
-    public static void addItem(final Item item, final ResourceLocation rl) {
-        itemEntries.add(new AbstractMap.SimpleImmutableEntry<>(rl, item));
-    }
-
-    public static void init() {
-        for (final Field field : TCItems.class.getFields()) {
-            final int modifiers = field.getModifiers();
-            if (Modifier.isStatic(modifiers) && Modifier.isFinal(modifiers)
-                    && Modifier.isPublic(modifiers)) {
-                final String name = field.getName().toLowerCase();
-                try {
-                    final Object value = field.get(null);
-                    if (value instanceof Item) {
-                        addItem((Item) value, new ResourceLocation(TCUtilityMain.MODID, name));
-                    }
-                } catch (IllegalArgumentException | IllegalAccessException e) {
-                    e.printStackTrace();
-                }
-            }
+        ArmorSpec(final String registryName, final ArmorMaterial material,
+                final EquipmentSlot slot) {
+            this.registryName = registryName;
+            this.material = material;
+            this.slot = slot;
         }
     }
 
-    @SubscribeEvent
-    public static void onRegister(final RegisterEvent event) {
-        event.register(ForgeRegistries.Keys.ITEMS, helper -> {
-            for (final Entry<ResourceLocation, Item> entry : itemEntries) {
-                helper.register(entry.getKey(), entry.getValue());
-            }
-            com.troblecodings.tcutility.TCUtilityMain.LOG.info(
-                    "[TCItems] Registered {} items (armor/door/special)", itemEntries.size());
-        });
+    private static final List<ArmorSpec> armorSpecs = new ArrayList<>();
+    private static final List<String> itemNames = new ArrayList<>();
+
+    public static void init() {
+        // Reflection-Pfad fuer manuell deklarierte Items ist mit dem Defer-
+        // Modell nicht vereinbar -- Items duerfen erst im RegisterEvent
+        // konstruiert werden. No-op, bleibt fuer kuenftige Erweiterungen.
     }
 
     public static void initJsonFiles() {
         final Map<String, ArmorProperties> armor = getArmorFromJson("armordefinitions");
-
         for (final Entry<String, ArmorProperties> armorEntry : armor.entrySet()) {
             final String armorName = armorEntry.getKey();
             final ArmorProperties property = armorEntry.getValue();
             final ArmorCreateInfo armorInfo = property.getArmorInfo();
             final ArmorMaterial material = makeArmorMaterial(armorName, armorInfo);
             final List<String> slots = property.getSlots();
-
             for (final String slot : slots) {
                 final ArmorTypes type = Enum.valueOf(ArmorTypes.class, slot.toUpperCase());
                 final String registryName = type.getRegistryName(armorName);
-                final EquipmentSlot equipSlot = mapSlot(type);
-                final ArmorItem armorItem = new ArmorItem(material, equipSlot,
-                        new Item.Properties().tab(CreativeModeTab.TAB_COMBAT));
-                addItem(armorItem, new ResourceLocation(TCUtilityMain.MODID, registryName));
+                armorSpecs.add(new ArmorSpec(registryName, material, mapSlot(type)));
             }
         }
 
         final Map<String, ItemProperties> items = getItemFromJson("itemdefinitions");
-
         for (final Entry<String, ItemProperties> itemEntry : items.entrySet()) {
-            final String itemName = itemEntry.getKey();
-            final Item item = new Item(new Item.Properties().tab(TCTabs.ITEMS));
-            addItem(item, new ResourceLocation(TCUtilityMain.MODID, itemName));
+            itemNames.add(itemEntry.getKey());
         }
+    }
+
+    @SubscribeEvent
+    public static void onRegister(final RegisterEvent event) {
+        if (!event.getRegistryKey().equals(ForgeRegistries.Keys.ITEMS)) {
+            return;
+        }
+        event.register(ForgeRegistries.Keys.ITEMS, helper -> {
+            for (final ArmorSpec spec : armorSpecs) {
+                final ArmorItem armorItem = new ArmorItem(spec.material, spec.slot,
+                        new Item.Properties().tab(CreativeModeTab.TAB_COMBAT));
+                helper.register(new ResourceLocation(TCUtilityMain.MODID, spec.registryName),
+                        armorItem);
+            }
+            for (final String itemName : itemNames) {
+                final Item item = new Item(new Item.Properties().tab(TCTabs.ITEMS));
+                helper.register(new ResourceLocation(TCUtilityMain.MODID, itemName), item);
+            }
+            TCUtilityMain.LOG.info("[TCItems] Registered {} armor pieces, {} plain items",
+                    armorSpecs.size(), itemNames.size());
+        });
     }
 
     private static EquipmentSlot mapSlot(final ArmorTypes type) {
@@ -118,7 +122,9 @@ public final class TCItems {
 
     /**
      * 1.19.2 hat keinen EnumHelper.addArmorMaterial; stattdessen wird ein
-     * {@link ArmorMaterial} pro Material instanziert.
+     * {@link ArmorMaterial} pro Material instanziert. ArmorMaterial ist ein
+     * pures Interface und nutzt selbst keine Registry-Holder, daher ist die
+     * Konstruktion bereits im Mod-Konstruktor unbedenklich.
      */
     private static ArmorMaterial makeArmorMaterial(final String name,
             final ArmorCreateInfo info) {

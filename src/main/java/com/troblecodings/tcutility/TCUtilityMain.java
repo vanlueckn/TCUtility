@@ -43,9 +43,8 @@ public class TCUtilityMain {
             TCBlocks.init();
             TCBlocks.initJsonFiles();
             TCItems.initJsonFiles();
-            LOG.info("[TCUtility] Pipeline parsed {} block entries, {} item entries; "
-                    + "fluid construction is deferred to RegisterEvent",
-                    TCBlocks.blockEntries.size(), TCItems.itemEntries.size());
+            LOG.info("[TCUtility] Pipeline parsed JSON specs; "
+                    + "all Block/Item construction is deferred to RegisterEvent");
 
             final var modBus = net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext.get()
                     .getModEventBus();

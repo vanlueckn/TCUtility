@@ -1,7 +1,5 @@
 package com.troblecodings.tcutility.init;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,71 +43,159 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegisterEvent;
 
 /**
- * Sammelt im Mod-Konstruktor alle aus den JSON-Definitionen abgeleiteten
- * Block-Instanzen mit ihren ResourceLocations und registriert sie in
- * 1.19's {@link RegisterEvent}-Pattern (kein {@code setRegistryName} mehr).
+ * Sammelt im Mod-Konstruktor nur Block-Spezifikationen (Name+Typ+Properties)
+ * aus den blockdefinitions-JSONs; in 1.19+ darf {@code new Block(...)} erst
+ * waehrend des BLOCKS-{@link RegisterEvent} aufgerufen werden -- vorher ruft
+ * der Block-Konstruktor {@code createIntrusiveHolder} auf eine bereits
+ * gefrorene Registry. Die eigentliche Block- und Item-Konstruktion und
+ * -Registrierung passiert daher in den passenden Event-Handlern.
  */
 public final class TCBlocks {
 
     private TCBlocks() {
     }
 
-    /** Liste aller (Block + Name)-Tupel, die im RegisterEvent eingespielt werden. */
-    public static final List<Entry<ResourceLocation, Block>> blockEntries = new ArrayList<>();
-    /** Reine Block-Liste fuer Render-Layer-Setup und Compatibility-Lookups. */
+    private static final class BlockSpec {
+        final String objectName;
+        final ResourceLocation rl;
+        final BlockTypes type;
+        final BlockCreateInfo info;
+        Block constructedBlock;
+        Block gateBlock;
+
+        BlockSpec(final String objectName, final ResourceLocation rl, final BlockTypes type,
+                final BlockCreateInfo info) {
+            this.objectName = objectName;
+            this.rl = rl;
+            this.type = type;
+            this.info = info;
+        }
+    }
+
+    private static final List<BlockSpec> blockSpecs = new ArrayList<>();
+
+    /** Reine Liste registrierter Bloecke fuer das client-seitige Render-Layer-Setup. */
     public static final List<Block> blocksToRegister = new ArrayList<>();
 
+    /**
+     * Legacy-Kompatibilitaet -- TCRenderTypes pruefte bisher ueber blockEntries.
+     * Wird waehrend des BLOCKS-RegisterEvent gefuellt.
+     */
+    public static final List<Entry<ResourceLocation, Block>> blockEntries = new ArrayList<>();
+
     public static void init() {
-        // Reflection ueber static final Felder; falls in der Mod manuelle
-        // Block-Definitionen ueber Felder kommen, werden sie hier eingesammelt.
-        for (final Field field : TCBlocks.class.getFields()) {
-            final int modifiers = field.getModifiers();
-            if (Modifier.isStatic(modifiers) && Modifier.isFinal(modifiers)
-                    && Modifier.isPublic(modifiers)) {
-                final String name = field.getName().toLowerCase();
-                try {
-                    final Object value = field.get(null);
-                    if (value instanceof Block) {
-                        final Block block = (Block) value;
-                        register(block, new ResourceLocation(TCUtilityMain.MODID, name));
-                    }
-                } catch (IllegalArgumentException | IllegalAccessException e) {
-                    e.printStackTrace();
-                }
+        // Reflection-Pfad fuer manuelle public-static-final-Felder ist mit
+        // dem Defer-Modell nicht vereinbar (Block kann nicht im Mod-Ctor
+        // konstruiert werden). Aktuell wird er ohnehin nicht genutzt --
+        // bleibt als no-op fuer kuenftige Erweiterungen.
+    }
+
+    public static void initJsonFiles() {
+        final Map<String, BlockProperties> blocks = getFromJson("blockdefinitions");
+        for (final Entry<String, BlockProperties> blocksEntry : blocks.entrySet()) {
+            final String objectname = blocksEntry.getKey();
+            final BlockProperties property = blocksEntry.getValue();
+            final BlockCreateInfo blockInfo = property.getBlockInfo();
+            final List<String> states = property.getStates();
+            for (final String state : states) {
+                final BlockTypes type = Enum.valueOf(BlockTypes.class, state.toUpperCase());
+                final String registryName = type.getRegistryName(objectname);
+                final ResourceLocation rl = new ResourceLocation(TCUtilityMain.MODID, registryName);
+                blockSpecs.add(new BlockSpec(objectname, rl, type, blockInfo));
             }
         }
     }
 
     @SubscribeEvent
     public static void onRegister(final RegisterEvent event) {
-        // 1.19.2-Helper-Pattern: register(key, helper -> { helper.register(...); })
-        // statt einzelner Supplier-Calls; vermeidet Surprise-Latency und
-        // sichert, dass alle Items waehrend des ITEMS-Registry-Frames
-        // tatsaechlich eingetragen werden, bevor der Creative-Tab sie scannt.
-        event.register(ForgeRegistries.Keys.BLOCKS, helper -> {
-            for (final Entry<ResourceLocation, Block> entry : blockEntries) {
-                helper.register(entry.getKey(), entry.getValue());
-            }
-        });
-        event.register(ForgeRegistries.Keys.ITEMS, helper -> {
-            int registered = 0;
-            for (final Entry<ResourceLocation, Block> entry : blockEntries) {
-                final Block block = entry.getValue();
-                // TCDoor und TCBigDoor bekommen ein separates DoubleHighBlockItem
-                // (TCDoorItem / TCBigDoorItem), das in initJsonFiles erzeugt und
-                // ueber TCItems registriert wird -- hier ueberspringen.
-                if (block instanceof TCDoor || block instanceof TCBigDoor) {
-                    continue;
+        if (event.getRegistryKey().equals(ForgeRegistries.Keys.BLOCKS)) {
+            event.register(ForgeRegistries.Keys.BLOCKS, helper -> {
+                for (final BlockSpec spec : blockSpecs) {
+                    final Block block = constructBlock(spec.type, spec.info);
+                    spec.constructedBlock = block;
+                    blocksToRegister.add(block);
+                    blockEntries.add(Map.entry(spec.rl, block));
+                    helper.register(spec.rl, block);
+                    if (spec.type == BlockTypes.GARAGE) {
+                        final Block gate = new TCGarageGate(spec.info);
+                        spec.gateBlock = gate;
+                        blocksToRegister.add(gate);
+                        final ResourceLocation gateRl = new ResourceLocation(
+                                TCUtilityMain.MODID, spec.rl.getPath() + "_gate");
+                        blockEntries.add(Map.entry(gateRl, gate));
+                        helper.register(gateRl, gate);
+                    }
                 }
-                final Item.Properties props = new Item.Properties().tab(groupFor(block));
-                final BlockItem blockItem = (block instanceof TCSlab) ? new TCSlabItem(block)
-                        : new BlockItem(block, props);
-                helper.register(entry.getKey(), blockItem);
-                registered++;
-            }
-            com.troblecodings.tcutility.TCUtilityMain.LOG.info(
-                    "[TCBlocks] Registered {} BlockItems for creative tabs", registered);
-        });
+                TCUtilityMain.LOG.info("[TCBlocks] Registered {} blocks", blocksToRegister.size());
+            });
+        } else if (event.getRegistryKey().equals(ForgeRegistries.Keys.ITEMS)) {
+            event.register(ForgeRegistries.Keys.ITEMS, helper -> {
+                int registered = 0;
+                for (final BlockSpec spec : blockSpecs) {
+                    final Block block = spec.constructedBlock;
+                    if (block == null) {
+                        continue;
+                    }
+                    if (block instanceof TCDoor) {
+                        final TCDoorItem dooritem = new TCDoorItem(block);
+                        helper.register(new ResourceLocation(TCUtilityMain.MODID,
+                                "door_" + spec.objectName), dooritem);
+                        registered++;
+                        continue;
+                    }
+                    if (block instanceof TCBigDoor) {
+                        final TCBigDoorItem bigdooritem = new TCBigDoorItem(block);
+                        helper.register(new ResourceLocation(TCUtilityMain.MODID,
+                                "bigdoor_" + spec.objectName), bigdooritem);
+                        registered++;
+                        continue;
+                    }
+                    final Item.Properties props = new Item.Properties().tab(groupFor(block));
+                    final BlockItem blockItem = (block instanceof TCSlab) ? new TCSlabItem(block)
+                            : new BlockItem(block, props);
+                    helper.register(spec.rl, blockItem);
+                    registered++;
+                }
+                TCUtilityMain.LOG.info("[TCBlocks] Registered {} BlockItems", registered);
+            });
+        }
+    }
+
+    private static Block constructBlock(final BlockTypes type, final BlockCreateInfo info) {
+        switch (type) {
+            case CUBE:
+                return new TCCube(info);
+            case CUBE_ROT:
+                return new TCCubeRotation(info);
+            case STAIR:
+                return new TCStairs(info);
+            case SLAB:
+                return new TCSlab(info);
+            case FENCE:
+                return new TCFence(info);
+            case FENCE_GATE:
+                return new TCFenceGate(info);
+            case WALL:
+                return new TCWall(info);
+            case TRAPDOOR:
+                return new TCTrapDoor(info);
+            case WINDOW:
+                return new TCWindow(info);
+            case LADDER:
+                return new TCLadder(info);
+            case DOOR:
+                return new TCDoor(info);
+            case BIGDOOR:
+                return new TCBigDoor(info);
+            case HANGING:
+                return new TCHanging(info);
+            case CUBE_ROT_ALL:
+                return new TCCubeRotationAll(info);
+            case GARAGE:
+                return new TCGarageDoor(info);
+            default:
+                throw new IllegalStateException("The given state " + type + " is not valid.");
+        }
     }
 
     private static CreativeModeTab groupFor(final Block block) {
@@ -129,92 +215,6 @@ public final class TCBlocks {
             return TCTabs.SPECIAL;
         }
         return TCTabs.BLOCKS;
-    }
-
-    public static void initJsonFiles() {
-        final Map<String, BlockProperties> blocks = getFromJson("blockdefinitions");
-
-        for (final Entry<String, BlockProperties> blocksEntry : blocks.entrySet()) {
-            final String objectname = blocksEntry.getKey();
-            final BlockProperties property = blocksEntry.getValue();
-            final BlockCreateInfo blockInfo = property.getBlockInfo();
-            final List<String> states = property.getStates();
-
-            for (final String state : states) {
-                final BlockTypes type = Enum.valueOf(BlockTypes.class, state.toUpperCase());
-                final String registryName = type.getRegistryName(objectname);
-                final ResourceLocation rl = new ResourceLocation(TCUtilityMain.MODID, registryName);
-
-                switch (type) {
-                    case CUBE:
-                        register(new TCCube(blockInfo), rl);
-                        break;
-                    case CUBE_ROT:
-                        register(new TCCubeRotation(blockInfo), rl);
-                        break;
-                    case STAIR:
-                        register(new TCStairs(blockInfo), rl);
-                        break;
-                    case SLAB:
-                        register(new TCSlab(blockInfo), rl);
-                        break;
-                    case FENCE:
-                        register(new TCFence(blockInfo), rl);
-                        break;
-                    case FENCE_GATE:
-                        register(new TCFenceGate(blockInfo), rl);
-                        break;
-                    case WALL:
-                        register(new TCWall(blockInfo), rl);
-                        break;
-                    case TRAPDOOR:
-                        register(new TCTrapDoor(blockInfo), rl);
-                        break;
-                    case WINDOW:
-                        register(new TCWindow(blockInfo), rl);
-                        break;
-                    case LADDER:
-                        register(new TCLadder(blockInfo), rl);
-                        break;
-                    case DOOR: {
-                        final TCDoor door = new TCDoor(blockInfo);
-                        register(door, rl);
-                        final TCDoorItem dooritem = new TCDoorItem(door);
-                        TCItems.addItem(dooritem,
-                                new ResourceLocation(TCUtilityMain.MODID, "door_" + objectname));
-                        break;
-                    }
-                    case BIGDOOR: {
-                        final TCBigDoor bigdoor = new TCBigDoor(blockInfo);
-                        register(bigdoor, rl);
-                        final TCBigDoorItem bigdooritem = new TCBigDoorItem(bigdoor);
-                        TCItems.addItem(bigdooritem,
-                                new ResourceLocation(TCUtilityMain.MODID, "bigdoor_" + objectname));
-                        break;
-                    }
-                    case HANGING:
-                        register(new TCHanging(blockInfo), rl);
-                        break;
-                    case CUBE_ROT_ALL:
-                        register(new TCCubeRotationAll(blockInfo), rl);
-                        break;
-                    case GARAGE: {
-                        register(new TCGarageDoor(blockInfo), rl);
-                        register(new TCGarageGate(blockInfo),
-                                new ResourceLocation(TCUtilityMain.MODID, registryName + "_gate"));
-                        break;
-                    }
-                    default:
-                        throw new IllegalStateException(
-                                "The given state " + state + " is not valid.");
-                }
-            }
-        }
-    }
-
-    private static void register(final Block block, final ResourceLocation rl) {
-        blockEntries.add(Map.entry(rl, block));
-        blocksToRegister.add(block);
     }
 
     private static Map<String, BlockProperties> getFromJson(final String directory) {
