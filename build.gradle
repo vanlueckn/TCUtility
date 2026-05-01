@@ -77,9 +77,17 @@ test {
     }
 }
 
+// Workaround fuer FG 5.1 + 1.12.2: classes und resources in EIN Verzeichnis schreiben.
+// FG 5.1 setzt build/classes/java/main und build/resources/main als zwei separate
+// Classpath-Eintraege; FML's mod scanner sieht sie als zwei "Mod-Container", findet
+// die @Mod-Klasse in classes/java/main ohne mcmod.info nebenan und registriert die Mod
+// mit Default-Name/-Version (resource pack heisst dann "tcutility" statt "TC Utility",
+// Texturen/Translations nicht im Resource-Pack-Namen).
+sourceSets.main.output.resourcesDir = sourceSets.main.java.destinationDirectory
+
 processResources {
 	inputs.property "version", project.version
-	
+
 	filesMatching("mcmod.info") {
 		expand "version": project.version, "mcversion": "1.12.2"
 	}
