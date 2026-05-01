@@ -1,7 +1,6 @@
 package com.troblecodings.tcutility.init;
 
 import java.lang.reflect.Type;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -13,7 +12,6 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.troblecodings.tcutility.TCUtilityMain;
 import com.troblecodings.tcutility.fluids.TCFluidBlock;
-import com.troblecodings.tcutility.fluids.TCFluids;
 import com.troblecodings.tcutility.utils.FluidCreateInfo;
 import com.troblecodings.tcutility.utils.FluidProperties;
 
@@ -24,7 +22,6 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FlowingFluid;
 import net.minecraft.world.level.material.Material;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -34,118 +31,122 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegisterEvent;
 
 /**
- * 1.19.2-Fluid-Pipeline. Pro JSON-Eintrag werden ein {@link FluidType} (neu
- * in 1.18+, ersetzt {@code FluidAttributes}), eine
- * {@link ForgeFlowingFluid.Source}, eine {@link ForgeFlowingFluid.Flowing},
- * ein {@link TCFluidBlock} und ein {@link BucketItem} angelegt. Die
- * zirkulaeren Suppliers werden weiter ueber {@link AtomicReference}-Holder
- * verbunden; FluidType-, Fluid-, Block- und Item-Registrierung passieren
- * im neuen {@link RegisterEvent}-Pattern.
+ * 1.19.2-Fluid-Pipeline. Fluid-Konstruktoren rufen intern
+ * {@code createIntrusiveHolder} und scheitern, sobald die Registry gefroren
+ * ist. Wir parsen daher in {@link #initJsonFiles} nur die Properties; die
+ * eigentliche Konstruktion + Registrierung von {@link FluidType},
+ * {@link ForgeFlowingFluid.Source}/{@code Flowing}, {@link TCFluidBlock} und
+ * {@link BucketItem} passiert erst in den passenden {@link RegisterEvent}-
+ * Frames, in denen die Registry noch offen ist.
  */
 public final class TCFluidsInit {
 
     private TCFluidsInit() {
     }
 
-    public static final List<TCFluids> fluidSets = new ArrayList<>();
-    public static final List<Entry<ResourceLocation, FluidType>> fluidTypeEntries =
-            new ArrayList<>();
-    public static final List<Entry<ResourceLocation, Fluid>> fluidEntries = new ArrayList<>();
-    public static final List<Entry<ResourceLocation, Block>> blockEntries = new ArrayList<>();
-    public static final List<Entry<ResourceLocation, Item>> itemEntries = new ArrayList<>();
-    /** Reine Block-Liste fuer das client-seitige Render-Layer-Setup. */
-    public static final List<Block> blocksToRegister = new ArrayList<>();
-
-    @SubscribeEvent
-    public static void onRegister(final RegisterEvent event) {
-        event.register(ForgeRegistries.Keys.FLUID_TYPES, helper -> {
-            for (final Entry<ResourceLocation, FluidType> e : fluidTypeEntries) {
-                helper.register(e.getKey(), e.getValue());
-            }
-        });
-        event.register(ForgeRegistries.Keys.FLUIDS, helper -> {
-            for (final Entry<ResourceLocation, Fluid> e : fluidEntries) {
-                helper.register(e.getKey(), e.getValue());
-            }
-        });
-        event.register(ForgeRegistries.Keys.BLOCKS, helper -> {
-            for (final Entry<ResourceLocation, Block> e : blockEntries) {
-                helper.register(e.getKey(), e.getValue());
-            }
-        });
-        event.register(ForgeRegistries.Keys.ITEMS, helper -> {
-            for (final Entry<ResourceLocation, Item> e : itemEntries) {
-                helper.register(e.getKey(), e.getValue());
-            }
-        });
-    }
-
-    public static void initJsonFiles() {
-        final Map<String, FluidProperties> fluids = getFromJson("fluiddefinitions");
-        for (final Entry<String, FluidProperties> entry : fluids.entrySet()) {
-            buildFluid(entry.getKey(), entry.getValue());
-        }
-    }
-
-    private static void buildFluid(final String name, final FluidProperties properties) {
-        final FluidCreateInfo info = properties.getFluidInfo();
-        final ResourceLocation rlType = new ResourceLocation(TCUtilityMain.MODID, name + "_type");
-        final ResourceLocation rlSource = new ResourceLocation(TCUtilityMain.MODID, name);
-        final ResourceLocation rlFlowing = new ResourceLocation(TCUtilityMain.MODID,
-                name + "_flowing");
-        final ResourceLocation rlBucket = new ResourceLocation(TCUtilityMain.MODID,
-                name + "_bucket");
-
-        final FluidType.Properties typeProps = FluidType.Properties.create()
-                .density(info.density)
-                .viscosity(info.viscosity)
-                .lightLevel(info.luminosity)
-                .temperature(info.temperature);
-        final FluidType fluidType = new FluidType(typeProps);
-
-        // Holder pro Komponente, weil ForgeFlowingFluid.Properties die
-        // anderen Komponenten als Supplier ueber gegenseitige Referenzen
-        // einbindet (Source <-> Flowing <-> Block <-> Bucket).
+    private static final class FluidEntry {
+        final String name;
+        final FluidCreateInfo info;
+        final AtomicReference<FluidType> typeRef = new AtomicReference<>();
         final AtomicReference<FlowingFluid> sourceRef = new AtomicReference<>();
         final AtomicReference<FlowingFluid> flowingRef = new AtomicReference<>();
         final AtomicReference<LiquidBlock> blockRef = new AtomicReference<>();
         final AtomicReference<Item> bucketRef = new AtomicReference<>();
 
-        final ForgeFlowingFluid.Properties fluidProps = new ForgeFlowingFluid.Properties(
-                () -> fluidType, sourceRef::get, flowingRef::get)
-                        .block(blockRef::get)
-                        .bucket(bucketRef::get)
-                        .slopeFindDistance(Math.max(1, info.flowLength))
-                        .tickRate(20)
-                        .explosionResistance(100f);
+        FluidEntry(final String name, final FluidCreateInfo info) {
+            this.name = name;
+            this.info = info;
+        }
+    }
 
-        final ForgeFlowingFluid.Source source = new ForgeFlowingFluid.Source(fluidProps);
-        sourceRef.set(source);
+    private static final List<FluidEntry> entries = new ArrayList<>();
 
-        final ForgeFlowingFluid.Flowing flowing = new ForgeFlowingFluid.Flowing(fluidProps);
-        flowingRef.set(flowing);
+    /**
+     * Reine Block-Liste fuer das client-seitige Render-Layer-Setup.
+     * TCRenderTypes liest sie waehrend FMLClientSetupEvent, also nachdem
+     * der BLOCKS-RegisterEvent sie hier befuellt hat.
+     */
+    public static final List<Block> blocksToRegister = new ArrayList<>();
 
-        final TCFluidBlock block = new TCFluidBlock(sourceRef::get,
-                BlockBehaviour.Properties.of(Material.WATER)
-                        .noCollission()
-                        .strength(100f)
-                        .noLootTable()
-                        .lightLevel(state -> info.luminosity),
-                info.effect, info.effectDuration, info.effectAmplifier);
-        blockRef.set(block);
+    public static void initJsonFiles() {
+        final Map<String, FluidProperties> fluids = getFromJson("fluiddefinitions");
+        for (final Entry<String, FluidProperties> entry : fluids.entrySet()) {
+            entries.add(new FluidEntry(entry.getKey(), entry.getValue().getFluidInfo()));
+        }
+    }
 
-        final BucketItem bucket = new BucketItem(sourceRef::get,
-                new Item.Properties().tab(TCTabs.SPECIAL).stacksTo(1)
-                        .craftRemainder(Items.BUCKET));
-        bucketRef.set(bucket);
+    @SubscribeEvent
+    public static void onRegister(final RegisterEvent event) {
+        if (event.getRegistryKey().equals(ForgeRegistries.Keys.FLUID_TYPES)) {
+            event.register(ForgeRegistries.Keys.FLUID_TYPES, helper -> {
+                for (final FluidEntry e : entries) {
+                    final FluidType type = new FluidType(FluidType.Properties.create()
+                            .density(e.info.density)
+                            .viscosity(e.info.viscosity)
+                            .lightLevel(e.info.luminosity)
+                            .temperature(e.info.temperature));
+                    e.typeRef.set(type);
+                    helper.register(new ResourceLocation(TCUtilityMain.MODID, e.name + "_type"),
+                            type);
+                }
+                TCUtilityMain.LOG.info("[TCFluidsInit] Registered {} fluid types",
+                        entries.size());
+            });
+        } else if (event.getRegistryKey().equals(ForgeRegistries.Keys.FLUIDS)) {
+            event.register(ForgeRegistries.Keys.FLUIDS, helper -> {
+                for (final FluidEntry e : entries) {
+                    final ForgeFlowingFluid.Properties props = new ForgeFlowingFluid.Properties(
+                            e.typeRef::get, e.sourceRef::get, e.flowingRef::get)
+                                    .block(e.blockRef::get)
+                                    .bucket(e.bucketRef::get)
+                                    .slopeFindDistance(Math.max(1, e.info.flowLength))
+                                    .tickRate(20)
+                                    .explosionResistance(100f);
+                    final ForgeFlowingFluid.Source source = new ForgeFlowingFluid.Source(props);
+                    e.sourceRef.set(source);
+                    helper.register(new ResourceLocation(TCUtilityMain.MODID, e.name), source);
 
-        fluidSets.add(new TCFluids(name, source, flowing, block, bucket));
-        fluidTypeEntries.add(new AbstractMap.SimpleImmutableEntry<>(rlType, fluidType));
-        fluidEntries.add(new AbstractMap.SimpleImmutableEntry<>(rlSource, source));
-        fluidEntries.add(new AbstractMap.SimpleImmutableEntry<>(rlFlowing, flowing));
-        blockEntries.add(new AbstractMap.SimpleImmutableEntry<>(rlSource, block));
-        blocksToRegister.add(block);
-        itemEntries.add(new AbstractMap.SimpleImmutableEntry<>(rlBucket, bucket));
+                    final ForgeFlowingFluid.Flowing flowing = new ForgeFlowingFluid.Flowing(props);
+                    e.flowingRef.set(flowing);
+                    helper.register(
+                            new ResourceLocation(TCUtilityMain.MODID, e.name + "_flowing"),
+                            flowing);
+                }
+                TCUtilityMain.LOG.info("[TCFluidsInit] Registered {} source/flowing fluid pairs",
+                        entries.size());
+            });
+        } else if (event.getRegistryKey().equals(ForgeRegistries.Keys.BLOCKS)) {
+            event.register(ForgeRegistries.Keys.BLOCKS, helper -> {
+                for (final FluidEntry e : entries) {
+                    final TCFluidBlock block = new TCFluidBlock(e.sourceRef::get,
+                            BlockBehaviour.Properties.of(Material.WATER)
+                                    .noCollission()
+                                    .strength(100f)
+                                    .noLootTable()
+                                    .lightLevel(state -> e.info.luminosity),
+                            e.info.effect, e.info.effectDuration, e.info.effectAmplifier);
+                    e.blockRef.set(block);
+                    blocksToRegister.add(block);
+                    helper.register(new ResourceLocation(TCUtilityMain.MODID, e.name), block);
+                }
+                TCUtilityMain.LOG.info("[TCFluidsInit] Registered {} fluid blocks",
+                        entries.size());
+            });
+        } else if (event.getRegistryKey().equals(ForgeRegistries.Keys.ITEMS)) {
+            event.register(ForgeRegistries.Keys.ITEMS, helper -> {
+                for (final FluidEntry e : entries) {
+                    final BucketItem bucket = new BucketItem(e.sourceRef::get,
+                            new Item.Properties().tab(TCTabs.SPECIAL).stacksTo(1)
+                                    .craftRemainder(Items.BUCKET));
+                    e.bucketRef.set(bucket);
+                    helper.register(
+                            new ResourceLocation(TCUtilityMain.MODID, e.name + "_bucket"),
+                            bucket);
+                }
+                TCUtilityMain.LOG.info("[TCFluidsInit] Registered {} bucket items",
+                        entries.size());
+            });
+        }
     }
 
     private static Map<String, FluidProperties> getFromJson(final String directory) {
