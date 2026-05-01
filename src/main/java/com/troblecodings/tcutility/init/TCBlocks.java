@@ -88,14 +88,13 @@ public final class TCBlocks {
             if (name == null) {
                 continue;
             }
-            final String path = name.getPath();
-            // Doors haben ihre Items separat (TCDoorItem/TCBigDoorItem) und werden
-            // ueber TCItems registriert; hier ueberspringen.
-            if (path.startsWith("door_") || path.startsWith("bigdoor_")
-                    || path.startsWith("garage_") || path.contains("_gate")) {
+            // TCDoor und TCBigDoor bekommen ein separates TallBlockItem
+            // (TCDoorItem / TCBigDoorItem), das in initJsonFiles erzeugt und
+            // ueber TCItems registriert wird -- hier ueberspringen.
+            if (block instanceof TCDoor || block instanceof TCBigDoor) {
                 continue;
             }
-            final Item.Properties props = new Item.Properties().group(groupFor(block, path));
+            final Item.Properties props = new Item.Properties().group(groupFor(block));
             final BlockItem blockItem = (block instanceof TCSlab) ? new TCSlabItem(block)
                     : new BlockItem(block, props);
             blockItem.setRegistryName(name);
@@ -103,7 +102,7 @@ public final class TCBlocks {
         }
     }
 
-    private static net.minecraft.item.ItemGroup groupFor(final Block block, final String path) {
+    private static net.minecraft.item.ItemGroup groupFor(final Block block) {
         if (block instanceof TCSlab) {
             return TCTabs.SLABS;
         }
@@ -112,6 +111,9 @@ public final class TCBlocks {
         }
         if (block instanceof TCFence || block instanceof TCFenceGate) {
             return TCTabs.FENCE;
+        }
+        if (block instanceof TCGarageDoor || block instanceof TCGarageGate) {
+            return TCTabs.DOORS;
         }
         if (block instanceof TCWindow) {
             return TCTabs.SPECIAL;
