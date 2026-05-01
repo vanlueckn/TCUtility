@@ -80,7 +80,7 @@ public class TCBigDoor extends Block {
     private Item item;
 
     public TCBigDoor(final BlockCreateInfo blockInfo) {
-        super(blockInfo.toProperties());
+        super(blockInfo.toNonSolidProperties());
         this.setDefaultState(this.stateContainer.getBaseState()
                 .with(FACING, Direction.NORTH)
                 .with(OPEN, Boolean.FALSE)

@@ -34,7 +34,7 @@ public class TCHanging extends Block {
     private final VoxelShape westShape;
 
     public TCHanging(final BlockCreateInfo blockInfo) {
-        super(blockInfo.toProperties());
+        super(blockInfo.toNonSolidProperties());
         final int[] b = TCCube.boxArr(blockInfo.box);
         // Default-Orientierung ist UP (Block haengt von der Decke). Die anderen
         // Orientierungen werden ueber Y- bzw. X-Rotationen abgeleitet.

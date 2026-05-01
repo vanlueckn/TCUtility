@@ -7,6 +7,6 @@ import net.minecraft.block.SlabBlock;
 public class TCSlab extends SlabBlock {
 
     public TCSlab(final BlockCreateInfo blockInfo) {
-        super(blockInfo.toProperties());
+        super(blockInfo.toNonSolidProperties());
     }
 }

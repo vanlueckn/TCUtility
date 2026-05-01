@@ -28,7 +28,7 @@ public class TCCubeRotation extends Block {
     private final VoxelShape westShape;
 
     public TCCubeRotation(final BlockCreateInfo blockInfo) {
-        super(blockInfo.toProperties());
+        super(blockInfo.toNonSolidProperties());
         final int[] b = TCCube.boxArr(blockInfo.box);
         // box ist im 0..16 Bereich; Default ist [0,0,0,16,16,16].
         // North = unmodifiziert, Rotation um Y-Achse:

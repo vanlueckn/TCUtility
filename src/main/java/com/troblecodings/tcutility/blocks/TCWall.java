@@ -7,6 +7,6 @@ import net.minecraft.block.WallBlock;
 public class TCWall extends WallBlock {
 
     public TCWall(final BlockCreateInfo blockInfo) {
-        super(blockInfo.toProperties());
+        super(blockInfo.toNonSolidProperties());
     }
 }

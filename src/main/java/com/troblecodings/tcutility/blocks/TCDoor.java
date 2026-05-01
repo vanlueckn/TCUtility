@@ -10,7 +10,7 @@ public class TCDoor extends DoorBlock {
     protected Item item;
 
     public TCDoor(final BlockCreateInfo blockInfo) {
-        super(blockInfo.toProperties());
+        super(blockInfo.toNonSolidProperties());
     }
 
     public void setItem(final Item item) {

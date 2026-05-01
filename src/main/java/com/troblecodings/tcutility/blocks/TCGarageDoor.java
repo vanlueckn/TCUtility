@@ -43,7 +43,7 @@ public class TCGarageDoor extends Block {
     private static final int MAX_REACH = 10;
 
     public TCGarageDoor(final BlockCreateInfo blockInfo) {
-        super(blockInfo.toProperties());
+        super(blockInfo.toNonSolidProperties());
         this.setDefaultState(this.stateContainer.getBaseState()
                 .with(FACING, Direction.NORTH).with(OPEN, Boolean.TRUE));
     }

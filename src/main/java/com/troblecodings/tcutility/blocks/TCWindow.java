@@ -45,7 +45,7 @@ public class TCWindow extends Block {
     private static final VoxelShape SHAPE_Z = Block.makeCuboidShape(7, 0, 0, 9, 16, 16);
 
     public TCWindow(final BlockCreateInfo blockInfo) {
-        super(blockInfo.toProperties());
+        super(blockInfo.toNonSolidProperties());
         this.setDefaultState(this.stateContainer.getBaseState()
                 .with(UP, Boolean.FALSE)
                 .with(DOWN, Boolean.FALSE)

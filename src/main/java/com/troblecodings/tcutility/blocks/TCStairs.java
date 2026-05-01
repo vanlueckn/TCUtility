@@ -10,7 +10,7 @@ import net.minecraft.block.material.Material;
 public class TCStairs extends StairsBlock {
 
     public TCStairs(final BlockCreateInfo blockInfo) {
-        super(() -> stateForMaterial(blockInfo.material), blockInfo.toProperties());
+        super(() -> stateForMaterial(blockInfo.material), blockInfo.toNonSolidProperties());
     }
 
     /**

@@ -7,6 +7,6 @@ import net.minecraft.block.FenceGateBlock;
 public class TCFenceGate extends FenceGateBlock {
 
     public TCFenceGate(final BlockCreateInfo blockInfo) {
-        super(blockInfo.toProperties());
+        super(blockInfo.toNonSolidProperties());
     }
 }

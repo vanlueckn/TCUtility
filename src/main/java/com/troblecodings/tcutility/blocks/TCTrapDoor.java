@@ -7,6 +7,6 @@ import net.minecraft.block.TrapDoorBlock;
 public class TCTrapDoor extends TrapDoorBlock {
 
     public TCTrapDoor(final BlockCreateInfo blockInfo) {
-        super(blockInfo.toProperties());
+        super(blockInfo.toNonSolidProperties());
     }
 }

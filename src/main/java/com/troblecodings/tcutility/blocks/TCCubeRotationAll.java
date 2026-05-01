@@ -27,7 +27,7 @@ public class TCCubeRotationAll extends Block {
     private final VoxelShape zShape;
 
     public TCCubeRotationAll(final BlockCreateInfo blockInfo) {
-        super(blockInfo.toProperties());
+        super(blockInfo.toNonSolidProperties());
         final int[] b = TCCube.boxArr(blockInfo.box);
         // Y-Achse ist Default; X / Z sind Drehungen um die jeweilige Achse:
         //   X-Achse: y/z werden getauscht und gespiegelt
