@@ -41,7 +41,7 @@ public class TCUtilityMain {
     public TCUtilityMain() {
         instance = this;
         fileHandler = new ContentPackHandler(MODID, "assets/" + MODID, LOG,
-                name -> getRessourceLocation(name).get().toAbsolutePath());
+                name -> getRessourceLocation(name).map(Path::toAbsolutePath).orElse(null));
     }
 
     public static TCUtilityMain getInstance() {
