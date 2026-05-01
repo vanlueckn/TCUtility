@@ -31,43 +31,44 @@ public class TCUtilityMain {
 
     private static FileSystem fileSystemCache = null;
 
+    static {
+        System.out.println("!!!TCUTILITY!!! TCUtilityMain class loaded (static init)");
+    }
+
     public TCUtilityMain() {
-        // ContentPackHandler in 1.16.5 registriert NetworkContentPackHandler
-        // intern und haengt sich auf Client-Setup an die ResourcePackList,
-        // sodass kein separater "new NetworkContentPackHandler" mehr
-        // notwendig ist.
-        fileHandler = new ContentPackHandler(MODID, "assets/" + MODID, LOG,
-                name -> getRessourceLocation(name).map(Path::toAbsolutePath).orElse(null));
+        System.out.println("!!!TCUTILITY!!! Mod constructor entered");
+        try {
+            LOG.info("[TCUtility] Mod constructor starting");
 
-        // Mod-Bus-Registration der Registry-Subscriber. Die @Mod.EventBusSubscriber
-        // Annotationen koennten das auch tun, aber explizite Registrierung passt
-        // besser zur JSON-getriebenen Pipeline und macht die Reihenfolge sichtbar.
-        // Force-load TCTabs, sodass die Custom-CreativeModeTabs in TABS[]
-        // landen, bevor irgendein Item via .tab() darauf zeigt. Wuerde im
-        // Normalfall auch implizit beim ersten groupFor()-Call passieren --
-        // hier tun wir's eagerly, damit es deterministisch und vor jeder
-        // moeglichen Inventory-Cache-Initialisierung passiert.
-        TCTabs.touch();
+            fileHandler = new ContentPackHandler(MODID, "assets/" + MODID, LOG,
+                    name -> getRessourceLocation(name).map(Path::toAbsolutePath).orElse(null));
+            LOG.info("[TCUtility] ContentPackHandler created");
 
-        LOG.info("[TCUtility] Mod constructor starting -- pipeline init");
-        TCFluidsInit.initJsonFiles();
-        TCItems.init();
-        TCBlocks.init();
-        TCBlocks.initJsonFiles();
-        TCItems.initJsonFiles();
-        LOG.info("[TCUtility] Pipeline produced {} block entries, {} item entries, "
-                + "{} fluid block entries", TCBlocks.blockEntries.size(),
-                TCItems.itemEntries.size(), TCFluidsInit.blockEntries.size());
+            // Force-load TCTabs vor jedem Item.Properties.tab()-Call.
+            TCTabs.touch();
 
-        // 1.19.2-Modul-System scannt @Mod.EventBusSubscriber bei Init-Klassen
-        // in Subpackages nicht zuverlaessig auto-discovern -- manuelle
-        // Mod-Bus-Registrierung holt das nach.
-        final var modBus = net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext.get()
-                .getModEventBus();
-        modBus.register(TCBlocks.class);
-        modBus.register(TCItems.class);
-        modBus.register(TCFluidsInit.class);
-        LOG.info("[TCUtility] Subscribed TCBlocks/TCItems/TCFluidsInit on mod bus");
+            TCFluidsInit.initJsonFiles();
+            TCItems.init();
+            TCBlocks.init();
+            TCBlocks.initJsonFiles();
+            TCItems.initJsonFiles();
+            LOG.info("[TCUtility] Pipeline produced {} block entries, {} item entries, "
+                    + "{} fluid block entries", TCBlocks.blockEntries.size(),
+                    TCItems.itemEntries.size(), TCFluidsInit.blockEntries.size());
+
+            final var modBus = net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext.get()
+                    .getModEventBus();
+            modBus.register(TCBlocks.class);
+            modBus.register(TCItems.class);
+            modBus.register(TCFluidsInit.class);
+            LOG.info("[TCUtility] Subscribed TCBlocks/TCItems/TCFluidsInit on mod bus");
+            System.out.println("!!!TCUTILITY!!! Mod constructor completed successfully");
+        } catch (final Throwable t) {
+            System.out.println("!!!TCUTILITY!!! Mod constructor FAILED: " + t);
+            t.printStackTrace(System.out);
+            LOG.error("[TCUtility] Mod constructor failed", t);
+            throw t;
+        }
     }
 
     private static Optional<Path> getRessourceLocation(final String location) {
