@@ -15,6 +15,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.troblecodings.contentpacklib.FileReader;
+import com.troblecodings.contentpacklib.NetworkContentPackHandler;
 import com.troblecodings.tcutility.init.TCBlocks;
 import com.troblecodings.tcutility.init.TCFluidsInit;
 import com.troblecodings.tcutility.init.TCItems;
@@ -34,6 +35,10 @@ public class TCUtilityMain {
     public TCUtilityMain() {
         fileHandler = new FileReader(MODID, "assets/" + MODID, LOG,
                 name -> getRessourceLocation(name).map(Path::toAbsolutePath).orElse(null));
+
+        // Content-Pack-Hash-Sync zwischen Client und Server (registriert
+        // sich selbst auf dem Forge-Event-Bus).
+        new NetworkContentPackHandler(MODID, fileHandler);
 
         // Mod-Bus-Registration der Registry-Subscriber. Die @Mod.EventBusSubscriber
         // Annotationen koennten das auch tun, aber explizite Registrierung passt
