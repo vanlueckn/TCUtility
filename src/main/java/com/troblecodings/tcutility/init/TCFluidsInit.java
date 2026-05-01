@@ -13,6 +13,7 @@ import com.google.gson.reflect.TypeToken;
 import com.troblecodings.tcutility.TCUtilityMain;
 import com.troblecodings.tcutility.fluids.TCFluidBlock;
 import com.troblecodings.tcutility.fluids.TCFluids;
+import com.troblecodings.tcutility.fluids.TCUpwardFlowingFluid;
 import com.troblecodings.tcutility.utils.FluidCreateInfo;
 import com.troblecodings.tcutility.utils.FluidProperties;
 
@@ -108,22 +109,32 @@ public final class TCFluidsInit {
         final AtomicReference<FlowingFluidBlock> blockRef = new AtomicReference<>();
         final AtomicReference<Item> bucketRef = new AtomicReference<>();
 
+        // 1.12.2-Verhalten in 1.14+ replizieren:
+        //   - density < 0: Fluid spreadet aufwaerts (Steam o.ae.)
+        //   - viscosity steuert Tickrate; Vanilla water=1000/tick5,
+        //     lava=6000/tick30 -> tickRate ~ viscosity / 200
+        final int tickRate = Math.max(1, info.viscosity / 200);
         final ForgeFlowingFluid.Properties fluidProps = new ForgeFlowingFluid.Properties(
                 sourceRef::get, flowingRef::get, attrs)
                         .block(blockRef::get)
                         .bucket(bucketRef::get)
                         .slopeFindDistance(Math.max(1, info.flowLength))
-                        .tickRate(20)
+                        .tickRate(tickRate)
                         .explosionResistance(100f);
         if (info.canCreateSource) {
             fluidProps.canMultiply();
         }
 
-        final ForgeFlowingFluid.Source source = new ForgeFlowingFluid.Source(fluidProps);
+        final boolean upward = info.density < 0;
+        final FlowingFluid source = upward
+                ? new TCUpwardFlowingFluid.Source(fluidProps, info.flowLength)
+                : new ForgeFlowingFluid.Source(fluidProps);
         source.setRegistryName(rlSource);
         sourceRef.set(source);
 
-        final ForgeFlowingFluid.Flowing flowing = new ForgeFlowingFluid.Flowing(fluidProps);
+        final FlowingFluid flowing = upward
+                ? new TCUpwardFlowingFluid.Flowing(fluidProps, info.flowLength)
+                : new ForgeFlowingFluid.Flowing(fluidProps);
         flowing.setRegistryName(rlFlowing);
         flowingRef.set(flowing);
 
