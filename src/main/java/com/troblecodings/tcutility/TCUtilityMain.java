@@ -16,11 +16,11 @@ import org.apache.logging.log4j.Logger;
 
 import com.troblecodings.contentpacklib.ContentPackHandler;
 import com.troblecodings.tcutility.init.TCBlocks;
+import com.troblecodings.tcutility.init.TCTabs;
 import com.troblecodings.tcutility.init.TCFluidsInit;
 import com.troblecodings.tcutility.init.TCItems;
 
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
 @Mod(TCUtilityMain.MODID)
 public class TCUtilityMain {
@@ -42,15 +42,23 @@ public class TCUtilityMain {
         // Mod-Bus-Registration der Registry-Subscriber. Die @Mod.EventBusSubscriber
         // Annotationen koennten das auch tun, aber explizite Registrierung passt
         // besser zur JSON-getriebenen Pipeline und macht die Reihenfolge sichtbar.
+        // Force-load TCTabs, sodass die Custom-CreativeModeTabs in TABS[]
+        // landen, bevor irgendein Item via .tab() darauf zeigt. Wuerde im
+        // Normalfall auch implizit beim ersten groupFor()-Call passieren --
+        // hier tun wir's eagerly, damit es deterministisch und vor jeder
+        // moeglichen Inventory-Cache-Initialisierung passiert.
+        TCTabs.touch();
+
         TCFluidsInit.initJsonFiles();
         TCItems.init();
         TCBlocks.init();
         TCBlocks.initJsonFiles();
         TCItems.initJsonFiles();
 
-        FMLJavaModLoadingContext.get().getModEventBus().register(TCBlocks.class);
-        FMLJavaModLoadingContext.get().getModEventBus().register(TCItems.class);
-        FMLJavaModLoadingContext.get().getModEventBus().register(TCFluidsInit.class);
+        // @Mod.EventBusSubscriber-Annotation auf den Init-Klassen kuemmert
+        // sich um die Registry-Events; doppelte register()-Calls hier
+        // wuerden RegisterEvent zweimal handlen und in 1.19 zu doppelten
+        // Eintraegen mit "already registered"-Errors fuehren.
     }
 
     private static Optional<Path> getRessourceLocation(final String location) {

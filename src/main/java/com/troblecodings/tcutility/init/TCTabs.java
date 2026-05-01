@@ -10,6 +10,15 @@ public final class TCTabs {
     private TCTabs() {
     }
 
+    /**
+     * No-op-Aufruf, der das Klassen-Loading von {@link TCTabs} im Mod-
+     * Konstruktor erzwingt. Dadurch landen alle Custom-{@link CreativeModeTab}
+     * Instanzen via ihrer Static-Initializer in {@code CreativeModeTab.TABS},
+     * bevor das Creative-Inventory-UI sie zum ersten Mal scannt.
+     */
+    public static void touch() {
+    }
+
     public static final CreativeModeTab SPECIAL = new CreativeModeTab("tcspecial") {
         @Override
         public ItemStack makeIcon() {

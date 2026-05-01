@@ -60,23 +60,26 @@ public final class TCFluidsInit {
 
     @SubscribeEvent
     public static void onRegister(final RegisterEvent event) {
-        if (event.getRegistryKey().equals(ForgeRegistries.Keys.FLUID_TYPES)) {
+        event.register(ForgeRegistries.Keys.FLUID_TYPES, helper -> {
             for (final Entry<ResourceLocation, FluidType> e : fluidTypeEntries) {
-                event.register(ForgeRegistries.Keys.FLUID_TYPES, e.getKey(), e::getValue);
+                helper.register(e.getKey(), e.getValue());
             }
-        } else if (event.getRegistryKey().equals(ForgeRegistries.Keys.FLUIDS)) {
+        });
+        event.register(ForgeRegistries.Keys.FLUIDS, helper -> {
             for (final Entry<ResourceLocation, Fluid> e : fluidEntries) {
-                event.register(ForgeRegistries.Keys.FLUIDS, e.getKey(), e::getValue);
+                helper.register(e.getKey(), e.getValue());
             }
-        } else if (event.getRegistryKey().equals(ForgeRegistries.Keys.BLOCKS)) {
+        });
+        event.register(ForgeRegistries.Keys.BLOCKS, helper -> {
             for (final Entry<ResourceLocation, Block> e : blockEntries) {
-                event.register(ForgeRegistries.Keys.BLOCKS, e.getKey(), e::getValue);
+                helper.register(e.getKey(), e.getValue());
             }
-        } else if (event.getRegistryKey().equals(ForgeRegistries.Keys.ITEMS)) {
+        });
+        event.register(ForgeRegistries.Keys.ITEMS, helper -> {
             for (final Entry<ResourceLocation, Item> e : itemEntries) {
-                event.register(ForgeRegistries.Keys.ITEMS, e.getKey(), e::getValue);
+                helper.register(e.getKey(), e.getValue());
             }
-        }
+        });
     }
 
     public static void initJsonFiles() {

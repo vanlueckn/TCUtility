@@ -65,12 +65,13 @@ public final class TCItems {
 
     @SubscribeEvent
     public static void onRegister(final RegisterEvent event) {
-        if (!event.getRegistryKey().equals(ForgeRegistries.Keys.ITEMS)) {
-            return;
-        }
-        for (final Entry<ResourceLocation, Item> entry : itemEntries) {
-            event.register(ForgeRegistries.Keys.ITEMS, entry.getKey(), entry::getValue);
-        }
+        event.register(ForgeRegistries.Keys.ITEMS, helper -> {
+            for (final Entry<ResourceLocation, Item> entry : itemEntries) {
+                helper.register(entry.getKey(), entry.getValue());
+            }
+            com.troblecodings.tcutility.TCUtilityMain.LOG.info(
+                    "[TCItems] Registered {} items (armor/door/special)", itemEntries.size());
+        });
     }
 
     public static void initJsonFiles() {

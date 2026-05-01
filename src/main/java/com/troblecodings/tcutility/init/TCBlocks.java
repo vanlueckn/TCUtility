@@ -84,13 +84,17 @@ public final class TCBlocks {
 
     @SubscribeEvent
     public static void onRegister(final RegisterEvent event) {
-        if (event.getRegistryKey().equals(ForgeRegistries.Keys.BLOCKS)) {
+        // 1.19.2-Helper-Pattern: register(key, helper -> { helper.register(...); })
+        // statt einzelner Supplier-Calls; vermeidet Surprise-Latency und
+        // sichert, dass alle Items waehrend des ITEMS-Registry-Frames
+        // tatsaechlich eingetragen werden, bevor der Creative-Tab sie scannt.
+        event.register(ForgeRegistries.Keys.BLOCKS, helper -> {
             for (final Entry<ResourceLocation, Block> entry : blockEntries) {
-                event.register(ForgeRegistries.Keys.BLOCKS, entry.getKey(), entry::getValue);
+                helper.register(entry.getKey(), entry.getValue());
             }
-            return;
-        }
-        if (event.getRegistryKey().equals(ForgeRegistries.Keys.ITEMS)) {
+        });
+        event.register(ForgeRegistries.Keys.ITEMS, helper -> {
+            int registered = 0;
             for (final Entry<ResourceLocation, Block> entry : blockEntries) {
                 final Block block = entry.getValue();
                 // TCDoor und TCBigDoor bekommen ein separates DoubleHighBlockItem
@@ -102,9 +106,12 @@ public final class TCBlocks {
                 final Item.Properties props = new Item.Properties().tab(groupFor(block));
                 final BlockItem blockItem = (block instanceof TCSlab) ? new TCSlabItem(block)
                         : new BlockItem(block, props);
-                event.register(ForgeRegistries.Keys.ITEMS, entry.getKey(), () -> blockItem);
+                helper.register(entry.getKey(), blockItem);
+                registered++;
             }
-        }
+            com.troblecodings.tcutility.TCUtilityMain.LOG.info(
+                    "[TCBlocks] Registered {} BlockItems for creative tabs", registered);
+        });
     }
 
     private static CreativeModeTab groupFor(final Block block) {
