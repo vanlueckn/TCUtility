@@ -26,7 +26,10 @@ sourceSets{
 
 def ver = System.getenv("APPVEYOR_BUILD_VERSION")
 if(ver == null)
-	ver = 'dev'
+	// 1.19.2-FML besteht auf gueltigem Semver in mods.toml; "dev" wird mit
+	// "Illegal version number" abgewiesen. Wir setzen daher einen
+	// expliziten 0.0.0-Dev-Build-Tag fuer lokale Entwicklungslaeufe.
+	ver = '0.0.0-dev'
 
 def key = System.getenv("CURSETOKEN")
 if(key == null)
