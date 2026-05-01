@@ -49,23 +49,25 @@ public class TCUtilityMain {
         // moeglichen Inventory-Cache-Initialisierung passiert.
         TCTabs.touch();
 
+        LOG.info("[TCUtility] Mod constructor starting -- pipeline init");
         TCFluidsInit.initJsonFiles();
         TCItems.init();
         TCBlocks.init();
         TCBlocks.initJsonFiles();
         TCItems.initJsonFiles();
+        LOG.info("[TCUtility] Pipeline produced {} block entries, {} item entries, "
+                + "{} fluid block entries", TCBlocks.blockEntries.size(),
+                TCItems.itemEntries.size(), TCFluidsInit.blockEntries.size());
 
         // 1.19.2-Modul-System scannt @Mod.EventBusSubscriber bei Init-Klassen
         // in Subpackages nicht zuverlaessig auto-discovern -- manuelle
-        // Mod-Bus-Registrierung holt das nach. Die Annotation bleibt fuer den
-        // Fall stehen, dass Forge sie spaeter doch findet (no-op wenn
-        // doppelt: register() ueber Event-Methoden ist idempotent, da Forge
-        // intern dedupliziert).
+        // Mod-Bus-Registrierung holt das nach.
         final var modBus = net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext.get()
                 .getModEventBus();
         modBus.register(TCBlocks.class);
         modBus.register(TCItems.class);
         modBus.register(TCFluidsInit.class);
+        LOG.info("[TCUtility] Subscribed TCBlocks/TCItems/TCFluidsInit on mod bus");
     }
 
     private static Optional<Path> getRessourceLocation(final String location) {
