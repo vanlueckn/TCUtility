@@ -92,7 +92,13 @@ public class TCGarageDoor extends Block {
         super.onBlockHarvested(world, pos, state, player);
     }
 
-    private void toggleAt(final net.minecraft.world.World world, final BlockPos pos,
+    /**
+     * Toggle des Headers an {@code pos}: flippt OPEN, rollt die zugehoerigen
+     * Gates entsprechend, propagiert den State zu Nachbar-Headern. Public,
+     * damit auch ein {@link TCGarageGate}-Klick (von unten) das ganze Tor
+     * ausloesen kann -- so wie es das 1.12.2-Original macht.
+     */
+    public void toggleAt(final net.minecraft.world.World world, final BlockPos pos,
             final BlockState state) {
         final BlockState toggled = state.cycle(OPEN);
         world.setBlockState(pos, toggled, 10);
