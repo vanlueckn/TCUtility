@@ -7,7 +7,6 @@ issueTrackerURL="https://github.com/vanlueckn/TCUtility/issues"
 modId="tcutility"
 version="${version}"
 displayName="TC Utility"
-updateJSONURL=""
 displayURL="https://discord.gg/Um97SHnrYp"
 authors="Jeronimo"
 description='''
