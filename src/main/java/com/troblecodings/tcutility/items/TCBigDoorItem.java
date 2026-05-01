@@ -2,7 +2,6 @@ package com.troblecodings.tcutility.items;
 
 import com.troblecodings.tcutility.blocks.TCBigDoor;
 import com.troblecodings.tcutility.blocks.TCBigDoor.BigDoorThird;
-import com.troblecodings.tcutility.init.TCTabs;
 
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -30,7 +29,7 @@ public class TCBigDoorItem extends Item {
     private final TCBigDoor door;
 
     public TCBigDoorItem(final Block block) {
-        super(new Item.Properties().tab(TCTabs.DOORS));
+        super(new Item.Properties());
         this.door = (TCBigDoor) block;
         this.door.setItem(this);
     }

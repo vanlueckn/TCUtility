@@ -158,8 +158,7 @@ public final class TCFluidsInit {
             event.register(ForgeRegistries.Keys.ITEMS, helper -> {
                 for (final FluidEntry e : entries) {
                     final BucketItem bucket = new BucketItem(e.sourceRef::get,
-                            new Item.Properties().tab(TCTabs.SPECIAL).stacksTo(1)
-                                    .craftRemainder(Items.BUCKET));
+                            new Item.Properties().stacksTo(1).craftRemainder(Items.BUCKET));
                     e.bucketRef.set(bucket);
                     helper.register(
                             new ResourceLocation(TCUtilityMain.MODID, e.name + "_bucket"),

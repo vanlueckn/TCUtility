@@ -27,10 +27,6 @@ public class TCUtilityMain {
         fileHandler = new ContentPackHandler(MODID, "assets/" + MODID, LOG,
                 name -> getRessourceLocation(name).orElse(null));
 
-        // Force-load TCTabs damit die Custom-Creative-Tabs in TABS[] landen,
-        // bevor irgendein Item via Properties.tab() darauf zeigt.
-        TCTabs.touch();
-
         // Block-/Item-/Fluid-Konstruktion ist seit 1.19 strikt an die
         // jeweiligen RegisterEvents gebunden (frozen registries) -- hier nur
         // die JSON-Parse-Phase, die echten Instanzen entstehen in den
@@ -44,6 +40,7 @@ public class TCUtilityMain {
         // 1.19's modlauncher findet @Mod.EventBusSubscriber-Annotationen in
         // Subpackages nicht zuverlaessig auto-discovern -- daher manuell.
         final var modBus = FMLJavaModLoadingContext.get().getModEventBus();
+        modBus.register(TCTabs.class);
         modBus.register(TCBlocks.class);
         modBus.register(TCItems.class);
         modBus.register(TCFluidsInit.class);

@@ -41,13 +41,13 @@ curseforge {
     changelog = file('changelog.md')
     releaseType = 'release'
     changelogType = 'markdown'
-    addGameVersion '1.19.2'
+    addGameVersion '1.19.4'
   }
 }
 
 version = ver
 group = 'com.troblecodings'
-archivesBaseName = 'TCUtility-1.19.2'
+archivesBaseName = 'TCUtility-1.19.4'
 
 // 1.18+ erfordert JDK 17 zur Laufzeit; ForgeGradle benoetigt es auch
 // fuer den Decompile/Reobf-Pfad. Wir lassen Gradle das passende JDK
@@ -58,7 +58,7 @@ minecraft {
     // Mojang's Official-Mappings sind seit 1.18 der Standardpfad;
     // MCP-Snapshots stoppten bei 1.16.5. Quellcode verwendet daher die
     // Mojang-Namen (Level statt World, Player statt PlayerEntity, etc.).
-    mappings channel: 'official', version: '1.19.2'
+    mappings channel: 'official', version: '1.19.4'
     runs {
         client {
             workingDirectory project.file('run')
@@ -85,7 +85,7 @@ minecraft {
 }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.19.2-43.3.0'
+    minecraft 'net.minecraftforge:forge:1.19.4-45.4.0'
 }
 
 processResources {

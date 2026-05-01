@@ -35,7 +35,6 @@ import com.troblecodings.tcutility.utils.BlockProperties;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -144,9 +143,8 @@ public final class TCBlocks {
                                 "bigdoor_" + spec.objectName), new TCBigDoorItem(block));
                         continue;
                     }
-                    final Item.Properties props = new Item.Properties().tab(groupFor(block));
                     final BlockItem blockItem = (block instanceof TCSlab) ? new TCSlabItem(block)
-                            : new BlockItem(block, props);
+                            : new BlockItem(block, new Item.Properties());
                     helper.register(spec.rl, blockItem);
                 }
             });
@@ -188,25 +186,6 @@ public final class TCBlocks {
             default:
                 throw new IllegalStateException("The given state " + type + " is not valid.");
         }
-    }
-
-    private static CreativeModeTab groupFor(final Block block) {
-        if (block instanceof TCSlab) {
-            return TCTabs.SLABS;
-        }
-        if (block instanceof TCStairs) {
-            return TCTabs.STAIRS;
-        }
-        if (block instanceof TCFence || block instanceof TCFenceGate) {
-            return TCTabs.FENCE;
-        }
-        if (block instanceof TCGarageDoor || block instanceof TCGarageGate) {
-            return TCTabs.DOORS;
-        }
-        if (block instanceof TCWindow) {
-            return TCTabs.SPECIAL;
-        }
-        return TCTabs.BLOCKS;
     }
 
     private static Map<String, BlockProperties> getFromJson(final String directory) {

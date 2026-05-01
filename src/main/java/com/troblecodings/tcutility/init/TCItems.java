@@ -18,10 +18,8 @@ import com.troblecodings.tcutility.utils.ItemProperties;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ArmorMaterial;
-import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -44,13 +42,13 @@ public final class TCItems {
     private static final class ArmorSpec {
         final String registryName;
         final ArmorMaterial material;
-        final EquipmentSlot slot;
+        final ArmorItem.Type type;
 
         ArmorSpec(final String registryName, final ArmorMaterial material,
-                final EquipmentSlot slot) {
+                final ArmorItem.Type type) {
             this.registryName = registryName;
             this.material = material;
-            this.slot = slot;
+            this.type = type;
         }
     }
 
@@ -74,7 +72,7 @@ public final class TCItems {
             for (final String slot : slots) {
                 final ArmorTypes type = Enum.valueOf(ArmorTypes.class, slot.toUpperCase());
                 final String registryName = type.getRegistryName(armorName);
-                armorSpecs.add(new ArmorSpec(registryName, material, mapSlot(type)));
+                armorSpecs.add(new ArmorSpec(registryName, material, mapType(type)));
             }
         }
 
@@ -91,28 +89,28 @@ public final class TCItems {
         }
         event.register(ForgeRegistries.Keys.ITEMS, helper -> {
             for (final ArmorSpec spec : armorSpecs) {
-                final ArmorItem armorItem = new ArmorItem(spec.material, spec.slot,
-                        new Item.Properties().tab(CreativeModeTab.TAB_COMBAT));
+                final ArmorItem armorItem = new ArmorItem(spec.material, spec.type,
+                        new Item.Properties());
                 helper.register(new ResourceLocation(TCUtilityMain.MODID, spec.registryName),
                         armorItem);
             }
             for (final String itemName : itemNames) {
-                final Item item = new Item(new Item.Properties().tab(TCTabs.ITEMS));
+                final Item item = new Item(new Item.Properties());
                 helper.register(new ResourceLocation(TCUtilityMain.MODID, itemName), item);
             }
         });
     }
 
-    private static EquipmentSlot mapSlot(final ArmorTypes type) {
+    private static ArmorItem.Type mapType(final ArmorTypes type) {
         switch (type) {
             case HEAD:
-                return EquipmentSlot.HEAD;
+                return ArmorItem.Type.HELMET;
             case CHEST:
-                return EquipmentSlot.CHEST;
+                return ArmorItem.Type.CHESTPLATE;
             case LEGS:
-                return EquipmentSlot.LEGS;
+                return ArmorItem.Type.LEGGINGS;
             case FEET:
-                return EquipmentSlot.FEET;
+                return ArmorItem.Type.BOOTS;
             default:
                 throw new IllegalStateException("Unknown armor slot " + type);
         }
@@ -129,12 +127,12 @@ public final class TCItems {
         final String texturePrefix = TCUtilityMain.MODID + ":" + name;
         return new ArmorMaterial() {
             @Override
-            public int getDurabilityForSlot(final EquipmentSlot slot) {
+            public int getDurabilityForType(final ArmorItem.Type type) {
                 return info.durability;
             }
 
             @Override
-            public int getDefenseForSlot(final EquipmentSlot slot) {
+            public int getDefenseForType(final ArmorItem.Type type) {
                 return 1;
             }
 
