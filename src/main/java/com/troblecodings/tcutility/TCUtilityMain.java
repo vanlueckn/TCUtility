@@ -1,14 +1,6 @@
 package com.troblecodings.tcutility;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.Optional;
 
 import org.apache.logging.log4j.LogManager;
@@ -16,10 +8,11 @@ import org.apache.logging.log4j.Logger;
 
 import com.troblecodings.contentpacklib.ContentPackHandler;
 import com.troblecodings.tcutility.init.TCBlocks;
-import com.troblecodings.tcutility.init.TCTabs;
 import com.troblecodings.tcutility.init.TCFluidsInit;
 import com.troblecodings.tcutility.init.TCItems;
+import com.troblecodings.tcutility.init.TCTabs;
 
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 
 @Mod(TCUtilityMain.MODID)
@@ -28,8 +21,6 @@ public class TCUtilityMain {
     public static final String MODID = "tcutility";
     public static final Logger LOG = LogManager.getLogger();
     public static ContentPackHandler fileHandler;
-
-    private static FileSystem fileSystemCache = null;
 
     static {
         System.out.println("!!!TCUTILITY!!! TCUtilityMain class loaded (static init)");
@@ -41,7 +32,7 @@ public class TCUtilityMain {
             LOG.info("[TCUtility] Mod constructor starting");
 
             fileHandler = new ContentPackHandler(MODID, "assets/" + MODID, LOG,
-                    name -> getRessourceLocation(name).map(Path::toAbsolutePath).orElse(null));
+                    name -> getRessourceLocation(name).orElse(null));
             LOG.info("[TCUtility] ContentPackHandler created");
 
             // Force-load TCTabs vor jedem Item.Properties.tab()-Call.
@@ -71,34 +62,27 @@ public class TCUtilityMain {
         }
     }
 
+    /**
+     * 1.19+ verwendet einen Modul-Classloader, der Mod-Resources unter dem
+     * {@code union:}-URL-Schema rausgibt -- {@code Class.getResource} +
+     * {@code Paths.get(URI)} schlaegt damit fehl. Stattdessen besorgen wir
+     * uns die Pfade direkt aus dem Forge-{@code IModFile}, das fuer alle
+     * Schema-Varianten einen NIO-{@code Path} liefert.
+     */
     private static Optional<Path> getRessourceLocation(final String location) {
-        String filelocation = location;
-        final URL url = TCBlocks.class.getResource("/assets/" + MODID);
         try {
-            if (url != null) {
-                final URI uri = url.toURI();
-                if ("file".equals(uri.getScheme())) {
-                    if (!location.startsWith("/")) {
-                        filelocation = "/" + filelocation;
-                    }
-                    final URL resource = TCBlocks.class.getResource(filelocation);
-                    if (resource == null) {
-                        return Optional.empty();
-                    }
-                    return Optional.of(Paths.get(resource.toURI()));
-                } else {
-                    if (!"jar".equals(uri.getScheme())) {
-                        return Optional.empty();
-                    }
-                    if (fileSystemCache == null) {
-                        fileSystemCache = FileSystems.newFileSystem(uri, Collections.emptyMap());
-                    }
-                    return Optional.of(fileSystemCache.getPath(filelocation));
-                }
+            final var modFileInfo = ModList.get().getModFileById(MODID);
+            if (modFileInfo == null) {
+                return Optional.empty();
             }
-        } catch (final IOException | URISyntaxException e) {
-            e.printStackTrace();
+            final Path resolved = modFileInfo.getFile().findResource(location);
+            if (resolved == null) {
+                return Optional.empty();
+            }
+            return Optional.of(resolved);
+        } catch (final Exception e) {
+            LOG.error("[TCUtility] Failed to resolve mod resource '{}'", location, e);
+            return Optional.empty();
         }
-        return Optional.empty();
     }
 }
