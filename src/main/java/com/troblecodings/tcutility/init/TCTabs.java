@@ -1,60 +1,60 @@
 package com.troblecodings.tcutility.init;
 
-import net.minecraft.block.Blocks;
-import net.minecraft.item.ItemGroup;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 public final class TCTabs {
 
     private TCTabs() {
     }
 
-    public static final ItemGroup SPECIAL = new ItemGroup("tcspecial") {
+    public static final CreativeModeTab SPECIAL = new CreativeModeTab("tcspecial") {
         @Override
-        public ItemStack createIcon() {
+        public ItemStack makeIcon() {
             return new ItemStack(Blocks.GLASS_PANE);
         }
     };
 
-    public static final ItemGroup BLOCKS = new ItemGroup("tcblocks") {
+    public static final CreativeModeTab BLOCKS = new CreativeModeTab("tcblocks") {
         @Override
-        public ItemStack createIcon() {
+        public ItemStack makeIcon() {
             return new ItemStack(Blocks.OAK_PLANKS);
         }
     };
 
-    public static final ItemGroup SLABS = new ItemGroup("tcslabs") {
+    public static final CreativeModeTab SLABS = new CreativeModeTab("tcslabs") {
         @Override
-        public ItemStack createIcon() {
+        public ItemStack makeIcon() {
             return new ItemStack(Blocks.OAK_SLAB);
         }
     };
 
-    public static final ItemGroup STAIRS = new ItemGroup("tcstairs") {
+    public static final CreativeModeTab STAIRS = new CreativeModeTab("tcstairs") {
         @Override
-        public ItemStack createIcon() {
+        public ItemStack makeIcon() {
             return new ItemStack(Blocks.OAK_STAIRS);
         }
     };
 
-    public static final ItemGroup FENCE = new ItemGroup("tcfence") {
+    public static final CreativeModeTab FENCE = new CreativeModeTab("tcfence") {
         @Override
-        public ItemStack createIcon() {
+        public ItemStack makeIcon() {
             return new ItemStack(Blocks.OAK_FENCE);
         }
     };
 
-    public static final ItemGroup DOORS = new ItemGroup("tcdoors") {
+    public static final CreativeModeTab DOORS = new CreativeModeTab("tcdoors") {
         @Override
-        public ItemStack createIcon() {
+        public ItemStack makeIcon() {
             return new ItemStack(Items.OAK_DOOR);
         }
     };
 
-    public static final ItemGroup ITEMS = new ItemGroup("tcitems") {
+    public static final CreativeModeTab ITEMS = new CreativeModeTab("tcitems") {
         @Override
-        public ItemStack createIcon() {
+        public ItemStack makeIcon() {
             return new ItemStack(Items.PAPER);
         }
     };

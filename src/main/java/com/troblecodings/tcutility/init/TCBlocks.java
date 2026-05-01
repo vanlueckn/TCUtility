@@ -35,22 +35,31 @@ import com.troblecodings.tcutility.items.TCSlabItem;
 import com.troblecodings.tcutility.utils.BlockCreateInfo;
 import com.troblecodings.tcutility.utils.BlockProperties;
 
-import net.minecraft.block.Block;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
-import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.event.RegistryEvent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Block;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.IForgeRegistry;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegisterEvent;
 
+/**
+ * Sammelt im Mod-Konstruktor alle aus den JSON-Definitionen abgeleiteten
+ * Block-Instanzen mit ihren ResourceLocations und registriert sie in
+ * 1.19's {@link RegisterEvent}-Pattern (kein {@code setRegistryName} mehr).
+ */
 @Mod.EventBusSubscriber(modid = TCUtilityMain.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class TCBlocks {
 
     private TCBlocks() {
     }
 
-    public static final ArrayList<Block> blocksToRegister = new ArrayList<>();
+    /** Liste aller (Block + Name)-Tupel, die im RegisterEvent eingespielt werden. */
+    public static final List<Entry<ResourceLocation, Block>> blockEntries = new ArrayList<>();
+    /** Reine Block-Liste fuer Render-Layer-Setup und Compatibility-Lookups. */
+    public static final List<Block> blocksToRegister = new ArrayList<>();
 
     public static void init() {
         // Reflection ueber static final Felder; falls in der Mod manuelle
@@ -64,8 +73,7 @@ public final class TCBlocks {
                     final Object value = field.get(null);
                     if (value instanceof Block) {
                         final Block block = (Block) value;
-                        block.setRegistryName(new ResourceLocation(TCUtilityMain.MODID, name));
-                        blocksToRegister.add(block);
+                        register(block, new ResourceLocation(TCUtilityMain.MODID, name));
                     }
                 } catch (IllegalArgumentException | IllegalAccessException e) {
                     e.printStackTrace();
@@ -75,34 +83,31 @@ public final class TCBlocks {
     }
 
     @SubscribeEvent
-    public static void registerBlock(final RegistryEvent.Register<Block> event) {
-        final IForgeRegistry<Block> registry = event.getRegistry();
-        blocksToRegister.forEach(registry::register);
-    }
-
-    @SubscribeEvent
-    public static void registerBlockItems(final RegistryEvent.Register<Item> event) {
-        final IForgeRegistry<Item> registry = event.getRegistry();
-        for (final Block block : blocksToRegister) {
-            final ResourceLocation name = block.getRegistryName();
-            if (name == null) {
-                continue;
+    public static void onRegister(final RegisterEvent event) {
+        if (event.getRegistryKey().equals(ForgeRegistries.Keys.BLOCKS)) {
+            for (final Entry<ResourceLocation, Block> entry : blockEntries) {
+                event.register(ForgeRegistries.Keys.BLOCKS, entry.getKey(), entry::getValue);
             }
-            // TCDoor und TCBigDoor bekommen ein separates TallBlockItem
-            // (TCDoorItem / TCBigDoorItem), das in initJsonFiles erzeugt und
-            // ueber TCItems registriert wird -- hier ueberspringen.
-            if (block instanceof TCDoor || block instanceof TCBigDoor) {
-                continue;
+            return;
+        }
+        if (event.getRegistryKey().equals(ForgeRegistries.Keys.ITEMS)) {
+            for (final Entry<ResourceLocation, Block> entry : blockEntries) {
+                final Block block = entry.getValue();
+                // TCDoor und TCBigDoor bekommen ein separates DoubleHighBlockItem
+                // (TCDoorItem / TCBigDoorItem), das in initJsonFiles erzeugt und
+                // ueber TCItems registriert wird -- hier ueberspringen.
+                if (block instanceof TCDoor || block instanceof TCBigDoor) {
+                    continue;
+                }
+                final Item.Properties props = new Item.Properties().tab(groupFor(block));
+                final BlockItem blockItem = (block instanceof TCSlab) ? new TCSlabItem(block)
+                        : new BlockItem(block, props);
+                event.register(ForgeRegistries.Keys.ITEMS, entry.getKey(), () -> blockItem);
             }
-            final Item.Properties props = new Item.Properties().group(groupFor(block));
-            final BlockItem blockItem = (block instanceof TCSlab) ? new TCSlabItem(block)
-                    : new BlockItem(block, props);
-            blockItem.setRegistryName(name);
-            registry.register(blockItem);
         }
     }
 
-    private static net.minecraft.item.ItemGroup groupFor(final Block block) {
+    private static CreativeModeTab groupFor(final Block block) {
         if (block instanceof TCSlab) {
             return TCTabs.SLABS;
         }
@@ -170,18 +175,16 @@ public final class TCBlocks {
                         final TCDoor door = new TCDoor(blockInfo);
                         register(door, rl);
                         final TCDoorItem dooritem = new TCDoorItem(door);
-                        dooritem.setRegistryName(
+                        TCItems.addItem(dooritem,
                                 new ResourceLocation(TCUtilityMain.MODID, "door_" + objectname));
-                        TCItems.itemsToRegister.add(dooritem);
                         break;
                     }
                     case BIGDOOR: {
                         final TCBigDoor bigdoor = new TCBigDoor(blockInfo);
                         register(bigdoor, rl);
                         final TCBigDoorItem bigdooritem = new TCBigDoorItem(bigdoor);
-                        bigdooritem.setRegistryName(
+                        TCItems.addItem(bigdooritem,
                                 new ResourceLocation(TCUtilityMain.MODID, "bigdoor_" + objectname));
-                        TCItems.itemsToRegister.add(bigdooritem);
                         break;
                     }
                     case HANGING:
@@ -205,7 +208,7 @@ public final class TCBlocks {
     }
 
     private static void register(final Block block, final ResourceLocation rl) {
-        block.setRegistryName(rl);
+        blockEntries.add(Map.entry(rl, block));
         blocksToRegister.add(block);
     }
 
@@ -219,7 +222,9 @@ public final class TCBlocks {
             entrySet.forEach(entry -> {
                 final Map<String, BlockProperties> json =
                         gson.fromJson(entry.getValue(), typeOfHashMap);
-                properties.putAll(json);
+                if (json != null) {
+                    properties.putAll(json);
+                }
             });
         }
         return properties;

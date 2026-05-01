@@ -4,20 +4,20 @@ import com.troblecodings.tcutility.blocks.TCBigDoor;
 import com.troblecodings.tcutility.blocks.TCBigDoor.BigDoorThird;
 import com.troblecodings.tcutility.init.TCTabs;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.SoundType;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemUseContext;
-import net.minecraft.state.properties.DoorHingeSide;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.Direction;
-import net.minecraft.util.SoundCategory;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.vector.Vector3d;
-import net.minecraft.world.World;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.block.state.properties.DoorHingeSide;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.core.Direction;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.Level;
 
 /**
  * Setzt beim Klicken den dreistoeckigen Cluster eines {@link TCBigDoor}.
@@ -30,7 +30,7 @@ public class TCBigDoorItem extends Item {
     private final TCBigDoor door;
 
     public TCBigDoorItem(final Block block) {
-        super(new Item.Properties().group(TCTabs.DOORS));
+        super(new Item.Properties().tab(TCTabs.DOORS));
         this.door = (TCBigDoor) block;
         this.door.setItem(this);
     }
@@ -40,50 +40,50 @@ public class TCBigDoorItem extends Item {
     }
 
     @Override
-    public ActionResultType onItemUse(final ItemUseContext ctx) {
-        if (ctx.getFace() != Direction.UP) {
-            return ActionResultType.FAIL;
+    public InteractionResult useOn(final UseOnContext ctx) {
+        if (ctx.getClickedFace() != Direction.UP) {
+            return InteractionResult.FAIL;
         }
-        final World world = ctx.getWorld();
-        final PlayerEntity player = ctx.getPlayer();
+        final Level world = ctx.getLevel();
+        final Player player = ctx.getPlayer();
         if (player == null) {
-            return ActionResultType.FAIL;
+            return InteractionResult.FAIL;
         }
-        final ItemStack stack = player.getHeldItem(ctx.getHand());
+        final ItemStack stack = player.getItemInHand(ctx.getHand());
 
         // Wenn der angeklickte Block ersetzbar ist (Gras/Schnee), wird er
         // selbst zur LOWER-Position; sonst LOWER = clicked + face. Vanilla-
         // Verhalten aus 1.12.
-        BlockPos pos = ctx.getPos();
+        BlockPos pos = ctx.getClickedPos();
         final BlockState clicked = world.getBlockState(pos);
         if (!clicked.getMaterial().isReplaceable()) {
-            pos = pos.offset(ctx.getFace());
+            pos = pos.relative(ctx.getClickedFace());
         }
-        final BlockPos middle = pos.up();
-        final BlockPos upper = pos.up(2);
+        final BlockPos middle = pos.above();
+        final BlockPos upper = pos.above(2);
 
         if (!world.getBlockState(pos).getMaterial().isReplaceable()
                 || !world.getBlockState(middle).getMaterial().isReplaceable()
                 || !world.getBlockState(upper).getMaterial().isReplaceable()) {
-            return ActionResultType.FAIL;
+            return InteractionResult.FAIL;
         }
         // Solider Untergrund noetig.
-        if (!world.getBlockState(pos.down()).getMaterial().isSolid()) {
-            return ActionResultType.FAIL;
+        if (!world.getBlockState(pos.below()).getMaterial().isSolid()) {
+            return InteractionResult.FAIL;
         }
-        if (!player.canPlayerEdit(pos, ctx.getFace(), stack)) {
-            return ActionResultType.FAIL;
+        if (!player.mayUseItemAt(pos, ctx.getClickedFace(), stack)) {
+            return InteractionResult.FAIL;
         }
 
-        final Direction facing = player.getHorizontalFacing();
-        final Vector3d hit = ctx.getHitVec();
-        final double hitX = hit.x - ctx.getPos().getX();
-        final double hitZ = hit.z - ctx.getPos().getZ();
+        final Direction facing = player.getDirection();
+        final Vec3 hit = ctx.getClickLocation();
+        final double hitX = hit.x - ctx.getClickedPos().getX();
+        final double hitZ = hit.z - ctx.getClickedPos().getZ();
 
         // Initiale isRightHinge-Vermutung aus relativer Klick-Position --
         // 1:1 wie in der Vanilla-1.12-Door-Logik.
-        final int xOff = facing.getXOffset();
-        final int zOff = facing.getZOffset();
+        final int xOff = facing.getStepX();
+        final int zOff = facing.getStepZ();
         final boolean initialRightHinge = (xOff < 0 && hitZ < 0.5D)
                 || (xOff > 0 && hitZ > 0.5D)
                 || (zOff < 0 && hitX > 0.5D)
@@ -94,13 +94,13 @@ public class TCBigDoorItem extends Item {
         final BlockState placedLower = world.getBlockState(pos);
         final SoundType soundtype = placedLower.getBlock().getSoundType(placedLower, world, pos,
                 player);
-        world.playSound(player, pos, soundtype.getPlaceSound(), SoundCategory.BLOCKS,
+        world.playSound(player, pos, soundtype.getPlaceSound(), SoundSource.BLOCKS,
                 (soundtype.getVolume() + 1.0F) / 2.0F, soundtype.getPitch() * 0.8F);
 
-        if (!player.abilities.isCreativeMode) {
+        if (!player.getAbilities().instabuild) {
             stack.shrink(1);
         }
-        return ActionResultType.SUCCESS;
+        return InteractionResult.SUCCESS;
     }
 
     /**
@@ -109,18 +109,18 @@ public class TCBigDoorItem extends Item {
      * {@code instanceof TCBigDoor}, sonst stoeren sich benachbarte
      * Door-Varianten gegenseitig).
      */
-    private static void placeDoor(final World world, final BlockPos pos, final Direction facing,
+    private static void placeDoor(final Level world, final BlockPos pos, final Direction facing,
             final TCBigDoor door, boolean isRightHinge) {
-        final BlockPos right = pos.offset(facing.rotateY());
-        final BlockPos left = pos.offset(facing.rotateYCCW());
-        final int rightCubes = (world.getBlockState(right).isNormalCube(world, right) ? 1 : 0)
-                + (world.getBlockState(right.up()).isNormalCube(world, right.up()) ? 1 : 0);
-        final int leftCubes = (world.getBlockState(left).isNormalCube(world, left) ? 1 : 0)
-                + (world.getBlockState(left.up()).isNormalCube(world, left.up()) ? 1 : 0);
+        final BlockPos right = pos.relative(facing.getClockWise());
+        final BlockPos left = pos.relative(facing.getCounterClockWise());
+        final int rightCubes = (world.getBlockState(right).isRedstoneConductor(world, right) ? 1 : 0)
+                + (world.getBlockState(right.above()).isRedstoneConductor(world, right.above()) ? 1 : 0);
+        final int leftCubes = (world.getBlockState(left).isRedstoneConductor(world, left) ? 1 : 0)
+                + (world.getBlockState(left.above()).isRedstoneConductor(world, left.above()) ? 1 : 0);
         final boolean rightIsDoor = world.getBlockState(right).getBlock() == door
-                || world.getBlockState(right.up()).getBlock() == door;
+                || world.getBlockState(right.above()).getBlock() == door;
         final boolean leftIsDoor = world.getBlockState(left).getBlock() == door
-                || world.getBlockState(left.up()).getBlock() == door;
+                || world.getBlockState(left.above()).getBlock() == door;
 
         if ((!leftIsDoor || rightIsDoor) && rightCubes <= leftCubes) {
             if ((rightIsDoor && !leftIsDoor) || rightCubes < leftCubes) {
@@ -130,20 +130,20 @@ public class TCBigDoorItem extends Item {
             isRightHinge = true;
         }
 
-        final BlockPos middle = pos.up();
-        final BlockPos upper = pos.up(2);
-        final boolean powered = world.isBlockPowered(pos) || world.isBlockPowered(middle);
-        final BlockState base = door.getDefaultState()
-                .with(TCBigDoor.FACING, facing)
-                .with(TCBigDoor.HINGE,
+        final BlockPos middle = pos.above();
+        final BlockPos upper = pos.above(2);
+        final boolean powered = world.hasNeighborSignal(pos) || world.hasNeighborSignal(middle);
+        final BlockState base = door.defaultBlockState()
+                .setValue(TCBigDoor.FACING, facing)
+                .setValue(TCBigDoor.HINGE,
                         isRightHinge ? DoorHingeSide.RIGHT : DoorHingeSide.LEFT)
-                .with(TCBigDoor.POWERED, Boolean.valueOf(powered))
-                .with(TCBigDoor.OPEN, Boolean.valueOf(powered));
-        world.setBlockState(pos, base.with(TCBigDoor.THIRD, BigDoorThird.LOWER), 2);
-        world.setBlockState(middle, base.with(TCBigDoor.THIRD, BigDoorThird.MIDDLE), 2);
-        world.setBlockState(upper, base.with(TCBigDoor.THIRD, BigDoorThird.UPPER), 2);
-        world.notifyNeighborsOfStateChange(pos, door);
-        world.notifyNeighborsOfStateChange(middle, door);
-        world.notifyNeighborsOfStateChange(upper, door);
+                .setValue(TCBigDoor.POWERED, Boolean.valueOf(powered))
+                .setValue(TCBigDoor.OPEN, Boolean.valueOf(powered));
+        world.setBlock(pos, base.setValue(TCBigDoor.THIRD, BigDoorThird.LOWER), 2);
+        world.setBlock(middle, base.setValue(TCBigDoor.THIRD, BigDoorThird.MIDDLE), 2);
+        world.setBlock(upper, base.setValue(TCBigDoor.THIRD, BigDoorThird.UPPER), 2);
+        world.updateNeighborsAt(pos, door);
+        world.updateNeighborsAt(middle, door);
+        world.updateNeighborsAt(upper, door);
     }
 }

@@ -38,20 +38,24 @@ curseforge {
     changelog = file('changelog.md')
     releaseType = 'release'
     changelogType = 'markdown'
+    addGameVersion '1.19.2'
   }
 }
 
 version = ver
 group = 'com.troblecodings'
-archivesBaseName = 'TCUtility-1.16.5'
+archivesBaseName = 'TCUtility-1.19.2'
 
-sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
+// 1.18+ erfordert JDK 17 zur Laufzeit; ForgeGradle benoetigt es auch
+// fuer den Decompile/Reobf-Pfad. Wir lassen Gradle das passende JDK
+// via Toolchain holen.
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
 minecraft {
-    // MCP-Snapshot-Mappings fuer 1.16.5 -- selbe Namens-Konvention wie der
-    // 1.14.4-Port, damit die Block/Item-Methoden weiter unter ihren bekannten
-    // Mojang-Independent-Namen aufrufbar bleiben.
-    mappings channel: 'snapshot', version: '20210309-1.16.5'
+    // Mojang's Official-Mappings sind seit 1.18 der Standardpfad;
+    // MCP-Snapshots stoppten bei 1.16.5. Quellcode verwendet daher die
+    // Mojang-Namen (Level statt World, Player statt PlayerEntity, etc.).
+    mappings channel: 'official', version: '1.19.2'
     runs {
         client {
             workingDirectory project.file('run')
@@ -78,7 +82,7 @@ minecraft {
 }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.16.5-36.2.39'
+    minecraft 'net.minecraftforge:forge:1.19.2-43.3.0'
 }
 
 processResources {
@@ -88,15 +92,15 @@ processResources {
         expand "version": project.version
     }
 
-    // Asset-Format-Migration. Original-JSONs unter src/main/resources/ liegen
-    // im 1.12.2-Format vor und werden hier auf das jeweilige Ziel-Format
-    // konvertiert; im Build-Output landen die transformierten Files in
-    // build/resources/main/. Fuer den 1.16.5-Port haengen wir die
-    // 1.14->1.16-Schritte (pack_format, etc.) hinten an die 1.12->1.14-Pipe.
+    // Asset-Format-Migration. Die Pipeline verkettet alle Versions-Spruenge
+    // bis zum Zielformat -- 1.12->1.14, dann 1.14->1.16, dann 1.16->1.19
+    // (Platzhalter, falls spaeter Texture-/Blockstate-Renames noetig
+    // werden). Original-JSONs unter src/main/resources bleiben unangetastet.
     doLast {
         def pipeline = new com.troblecodings.build.AssetMigrationPipeline()
         pipeline.addAll(com.troblecodings.build.AssetMigrations.mc1_12_to_mc1_14())
         pipeline.addAll(com.troblecodings.build.AssetMigrations.mc1_14_to_mc1_16())
+        pipeline.addAll(com.troblecodings.build.AssetMigrations.mc1_16_to_mc1_19())
         pipeline.run(destinationDir)
         pipeline.report.each { logger.info(it) }
         logger.lifecycle("[asset-migrate] applied ${pipeline.report.size()} resource transforms")

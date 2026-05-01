@@ -2,8 +2,8 @@ package com.troblecodings.tcutility.blocks;
 
 import com.troblecodings.tcutility.utils.BlockCreateInfo;
 
-import net.minecraft.block.DoorBlock;
-import net.minecraft.item.Item;
+import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.item.Item;
 
 public class TCDoor extends DoorBlock {
 

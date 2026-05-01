@@ -2,14 +2,14 @@ package com.troblecodings.tcutility.blocks;
 
 import com.troblecodings.tcutility.utils.BlockCreateInfo;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.BlockRayTraceResult;
-import net.minecraft.world.World;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.level.Level;
 
 /**
  * Garage-Gate: einzelnes Segment in der Rolltor-Saeule eines
@@ -37,15 +37,15 @@ public class TCGarageGate extends TCCubeRotation {
     }
 
     @Override
-    public ActionResultType onBlockActivated(final BlockState state, final World world,
-            final BlockPos pos, final PlayerEntity player, final Hand hand,
-            final BlockRayTraceResult hit) {
+    public InteractionResult use(final BlockState state, final Level world,
+            final BlockPos pos, final Player player, final InteractionHand hand,
+            final BlockHitResult hit) {
         for (int i = 1; i < MAX_REACH; i++) {
-            final BlockPos above = pos.up(i);
+            final BlockPos above = pos.above(i);
             final BlockState aboveState = world.getBlockState(above);
             if (aboveState.getBlock() instanceof TCGarageDoor) {
                 ((TCGarageDoor) aboveState.getBlock()).toggleAt(world, above, aboveState);
-                return ActionResultType.func_233537_a_(world.isRemote);
+                return InteractionResult.sidedSuccess(world.isClientSide);
             }
             if (!(aboveState.getBlock() instanceof TCGarageGate)) {
                 // Block dazwischen, der weder Gate noch Header ist -- abbrechen.
@@ -55,33 +55,33 @@ public class TCGarageGate extends TCCubeRotation {
         // Hier folgt das 1.12.2-Verhalten: ein Klick auf ein Gate wird auch
         // dann als verarbeitet gemeldet, wenn kein Header gefunden wurde --
         // verhindert, dass man "durch" das Gate ungewollt einen Block setzt.
-        return ActionResultType.func_233537_a_(world.isRemote);
+        return InteractionResult.sidedSuccess(world.isClientSide);
     }
 
     @Override
-    public void onBlockHarvested(final World world, final BlockPos pos, final BlockState state,
-            final PlayerEntity player) {
+    public void playerWillDestroy(final Level world, final BlockPos pos, final BlockState state,
+            final Player player) {
         // Saeule nach unten: weitere Gate-Segmente entfernen.
         for (int i = 1; i < MAX_REACH; i++) {
-            final BlockPos below = pos.down(i);
+            final BlockPos below = pos.below(i);
             if (!(world.getBlockState(below).getBlock() instanceof TCGarageGate)) {
                 break;
             }
-            world.setBlockState(below, Blocks.AIR.getDefaultState(), 35);
+            world.setBlock(below, Blocks.AIR.defaultBlockState(), 35);
         }
         // Saeule nach oben: weitere Gate-Segmente plus den Header daruber.
         for (int i = 1; i < MAX_REACH; i++) {
-            final BlockPos above = pos.up(i);
+            final BlockPos above = pos.above(i);
             final BlockState aboveState = world.getBlockState(above);
             if (aboveState.getBlock() instanceof TCGarageGate) {
-                world.setBlockState(above, Blocks.AIR.getDefaultState(), 35);
+                world.setBlock(above, Blocks.AIR.defaultBlockState(), 35);
                 continue;
             }
             if (aboveState.getBlock() instanceof TCGarageDoor) {
-                world.setBlockState(above, Blocks.AIR.getDefaultState(), 35);
+                world.setBlock(above, Blocks.AIR.defaultBlockState(), 35);
             }
             break;
         }
-        super.onBlockHarvested(world, pos, state, player);
+        super.playerWillDestroy(world, pos, state, player);
     }
 }

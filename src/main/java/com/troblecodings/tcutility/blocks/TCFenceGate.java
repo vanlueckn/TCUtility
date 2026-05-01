@@ -2,7 +2,7 @@ package com.troblecodings.tcutility.blocks;
 
 import com.troblecodings.tcutility.utils.BlockCreateInfo;
 
-import net.minecraft.block.FenceGateBlock;
+import net.minecraft.world.level.block.FenceGateBlock;
 
 public class TCFenceGate extends FenceGateBlock {
 

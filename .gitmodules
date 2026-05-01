@@ -1,4 +1,4 @@
 [submodule "contentPackLib"]
 	path = contentPackLib
 	url = https://github.com/vanlueckn/contentPackLib
-	branch = 1.16.5
+	branch = 1.19

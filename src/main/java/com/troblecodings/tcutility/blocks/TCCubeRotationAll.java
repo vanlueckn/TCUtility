@@ -4,19 +4,19 @@ import javax.annotation.Nullable;
 
 import com.troblecodings.tcutility.utils.BlockCreateInfo;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.item.BlockItemUseContext;
-import net.minecraft.state.EnumProperty;
-import net.minecraft.state.StateContainer;
-import net.minecraft.state.properties.BlockStateProperties;
-import net.minecraft.util.Direction;
-import net.minecraft.util.Mirror;
-import net.minecraft.util.Rotation;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.shapes.ISelectionContext;
-import net.minecraft.util.math.shapes.VoxelShape;
-import net.minecraft.world.IBlockReader;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.Rotation;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.world.level.BlockGetter;
 
 public class TCCubeRotationAll extends Block {
 
@@ -32,17 +32,17 @@ public class TCCubeRotationAll extends Block {
         // Y-Achse ist Default; X / Z sind Drehungen um die jeweilige Achse:
         //   X-Achse: y/z werden getauscht und gespiegelt
         //   Z-Achse: x/y werden getauscht und gespiegelt
-        this.yShape = Block.makeCuboidShape(b[0], b[1], b[2], b[3], b[4], b[5]);
-        this.xShape = Block.makeCuboidShape(b[0], b[2], 16 - b[4], b[3], b[5], 16 - b[1]);
-        this.zShape = Block.makeCuboidShape(b[1], 16 - b[3], b[2], b[4], 16 - b[0], b[5]);
+        this.yShape = Block.box(b[0], b[1], b[2], b[3], b[4], b[5]);
+        this.xShape = Block.box(b[0], b[2], 16 - b[4], b[3], b[5], 16 - b[1]);
+        this.zShape = Block.box(b[1], 16 - b[3], b[2], b[4], 16 - b[0], b[5]);
 
-        this.setDefaultState(this.stateContainer.getBaseState().with(AXIS, Direction.Axis.Y));
+        this.registerDefaultState(this.stateDefinition.any().setValue(AXIS, Direction.Axis.Y));
     }
 
     @Override
-    public VoxelShape getShape(final BlockState state, final IBlockReader world, final BlockPos pos,
-            final ISelectionContext context) {
-        switch (state.get(AXIS)) {
+    public VoxelShape getShape(final BlockState state, final BlockGetter world, final BlockPos pos,
+            final CollisionContext context) {
+        switch (state.getValue(AXIS)) {
             case X:
                 return xShape;
             case Z:
@@ -55,20 +55,20 @@ public class TCCubeRotationAll extends Block {
 
     @Override
     @Nullable
-    public BlockState getStateForPlacement(final BlockItemUseContext context) {
-        return this.getDefaultState().with(AXIS, context.getFace().getAxis());
+    public BlockState getStateForPlacement(final BlockPlaceContext context) {
+        return this.defaultBlockState().setValue(AXIS, context.getClickedFace().getAxis());
     }
 
     @Override
     public BlockState rotate(final BlockState state, final Rotation rot) {
-        if (state.get(AXIS) == Direction.Axis.Y) {
+        if (state.getValue(AXIS) == Direction.Axis.Y) {
             return state;
         }
         switch (rot) {
             case COUNTERCLOCKWISE_90:
             case CLOCKWISE_90:
-                return state.with(AXIS,
-                        state.get(AXIS) == Direction.Axis.X ? Direction.Axis.Z : Direction.Axis.X);
+                return state.setValue(AXIS,
+                        state.getValue(AXIS) == Direction.Axis.X ? Direction.Axis.Z : Direction.Axis.X);
             default:
                 return state;
         }
@@ -80,7 +80,7 @@ public class TCCubeRotationAll extends Block {
     }
 
     @Override
-    protected void fillStateContainer(final StateContainer.Builder<Block, BlockState> builder) {
+    protected void createBlockStateDefinition(final StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(AXIS);
     }
 }

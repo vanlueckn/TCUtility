@@ -43,4 +43,14 @@ class AssetMigrations {
     static List<AssetMigrationStep> mc1_14_to_mc1_16() {
         return []
     }
+
+    /**
+     * Migrationen 1.16 -> 1.19. pack_format wechselt von 6 auf 9, das wird
+     * in der Original-{@code pack.mcmeta} gepflegt. Block-Models und
+     * Blockstates bleiben weitgehend identisch; Platzhalter, falls spaeter
+     * Texture-Pfad-Renames noetig werden (z.B. fuer Cave-Update-Bloecke).
+     */
+    static List<AssetMigrationStep> mc1_16_to_mc1_19() {
+        return []
+    }
 }

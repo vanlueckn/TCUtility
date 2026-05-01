@@ -2,7 +2,7 @@ package com.troblecodings.tcutility.blocks;
 
 import com.troblecodings.tcutility.utils.BlockCreateInfo;
 
-import net.minecraft.block.SlabBlock;
+import net.minecraft.world.level.block.SlabBlock;
 
 public class TCSlab extends SlabBlock {
 

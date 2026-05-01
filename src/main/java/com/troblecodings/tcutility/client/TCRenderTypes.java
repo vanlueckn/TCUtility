@@ -19,10 +19,10 @@ import com.troblecodings.tcutility.blocks.TCWindow;
 import com.troblecodings.tcutility.init.TCBlocks;
 import com.troblecodings.tcutility.init.TCFluidsInit;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.material.Material;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.material.Material;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.RenderTypeLookup;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -46,17 +46,17 @@ public final class TCRenderTypes {
     @SubscribeEvent
     public static void onClientSetup(final FMLClientSetupEvent event) {
         for (final Block block : TCBlocks.blocksToRegister) {
-            RenderTypeLookup.setRenderLayer(block, layerFor(block));
+            ItemBlockRenderTypes.setRenderLayer(block, layerFor(block));
         }
         for (final Block fluidBlock : TCFluidsInit.blocksToRegister) {
-            RenderTypeLookup.setRenderLayer(fluidBlock, RenderType.getTranslucent());
+            ItemBlockRenderTypes.setRenderLayer(fluidBlock, RenderType.translucent());
         }
     }
 
     private static RenderType layerFor(final Block block) {
-        final Material mat = block.getDefaultState().getMaterial();
-        if (mat == Material.GLASS || mat == Material.ICE || mat == Material.PACKED_ICE) {
-            return RenderType.getTranslucent();
+        final Material mat = block.defaultBlockState().getMaterial();
+        if (mat == Material.GLASS || mat == Material.ICE || mat == Material.ICE_SOLID) {
+            return RenderType.translucent();
         }
         // Bloecke mit ausgefraester / nicht-rechteckiger Geometrie brauchen
         // einen CUTOUT-Layer, damit die Texturen-Alpha sauber ausgeschnitten
@@ -74,14 +74,14 @@ public final class TCRenderTypes {
                 || block instanceof TCWall || block instanceof TCStairs
                 || block instanceof TCSlab || block instanceof TCCubeRotation
                 || block instanceof TCCubeRotationAll) {
-            return RenderType.getCutout();
+            return RenderType.cutout();
         }
-        if (mat == Material.LEAVES || mat == Material.PLANTS) {
-            return RenderType.getCutoutMipped();
+        if (mat == Material.LEAVES || mat == Material.PLANT) {
+            return RenderType.cutoutMipped();
         }
-        if (!mat.isOpaque()) {
-            return RenderType.getCutout();
+        if (!mat.isSolidBlocking()) {
+            return RenderType.cutout();
         }
-        return RenderType.getSolid();
+        return RenderType.solid();
     }
 }

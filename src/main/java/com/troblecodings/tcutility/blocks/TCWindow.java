@@ -4,17 +4,17 @@ import javax.annotation.Nullable;
 
 import com.troblecodings.tcutility.utils.BlockCreateInfo;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.item.BlockItemUseContext;
-import net.minecraft.state.BooleanProperty;
-import net.minecraft.state.StateContainer;
-import net.minecraft.util.Direction;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.shapes.ISelectionContext;
-import net.minecraft.util.math.shapes.VoxelShape;
-import net.minecraft.world.IBlockReader;
-import net.minecraft.world.IWorld;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.core.Direction;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.LevelAccessor;
 
 /**
  * Pane-artiges Fenster mit zusaetzlicher vertikaler Verbindung. Zustaende
@@ -41,52 +41,52 @@ public class TCWindow extends Block {
     /** {@code x}: true = pane verlaeuft entlang X-Axis, false = Z-Axis. */
     public static final BooleanProperty AXIS_X = BooleanProperty.create("x");
 
-    private static final VoxelShape SHAPE_X = Block.makeCuboidShape(0, 0, 7, 16, 16, 9);
-    private static final VoxelShape SHAPE_Z = Block.makeCuboidShape(7, 0, 0, 9, 16, 16);
+    private static final VoxelShape SHAPE_X = Block.box(0, 0, 7, 16, 16, 9);
+    private static final VoxelShape SHAPE_Z = Block.box(7, 0, 0, 9, 16, 16);
 
     public TCWindow(final BlockCreateInfo blockInfo) {
         super(blockInfo.toNonSolidProperties());
-        this.setDefaultState(this.stateContainer.getBaseState()
-                .with(UP, Boolean.FALSE)
-                .with(DOWN, Boolean.FALSE)
-                .with(LEFT, Boolean.FALSE)
-                .with(RIGHT, Boolean.FALSE)
-                .with(AXIS_X, Boolean.FALSE));
+        this.registerDefaultState(this.stateDefinition.any()
+                .setValue(UP, Boolean.FALSE)
+                .setValue(DOWN, Boolean.FALSE)
+                .setValue(LEFT, Boolean.FALSE)
+                .setValue(RIGHT, Boolean.FALSE)
+                .setValue(AXIS_X, Boolean.FALSE));
     }
 
     @Override
-    public VoxelShape getShape(final BlockState state, final IBlockReader world,
-            final BlockPos pos, final ISelectionContext context) {
-        return state.get(AXIS_X) ? SHAPE_X : SHAPE_Z;
+    public VoxelShape getShape(final BlockState state, final BlockGetter world,
+            final BlockPos pos, final CollisionContext context) {
+        return state.getValue(AXIS_X) ? SHAPE_X : SHAPE_Z;
     }
 
     @Override
     @Nullable
-    public BlockState getStateForPlacement(final BlockItemUseContext context) {
+    public BlockState getStateForPlacement(final BlockPlaceContext context) {
         // Spieler schaut entlang Z -> Pane steht senkrecht dazu auf X-Achse.
-        final Direction facing = context.getPlacementHorizontalFacing();
+        final Direction facing = context.getHorizontalDirection();
         final boolean axisX = facing.getAxis() == Direction.Axis.Z;
-        return computeConnections(getDefaultState().with(AXIS_X, axisX),
-                context.getWorld(), context.getPos());
+        return computeConnections(defaultBlockState().setValue(AXIS_X, axisX),
+                context.getLevel(), context.getClickedPos());
     }
 
     @Override
-    public BlockState updatePostPlacement(final BlockState state, final Direction facing,
-            final BlockState facingState, final IWorld world, final BlockPos currentPos,
+    public BlockState updateShape(final BlockState state, final Direction facing,
+            final BlockState facingState, final LevelAccessor world, final BlockPos currentPos,
             final BlockPos facingPos) {
         return computeConnections(state, world, currentPos);
     }
 
-    private BlockState computeConnections(final BlockState state, final IBlockReader world,
+    private BlockState computeConnections(final BlockState state, final BlockGetter world,
             final BlockPos pos) {
-        final boolean axisX = state.get(AXIS_X);
+        final boolean axisX = state.getValue(AXIS_X);
         final Direction left = axisX ? Direction.WEST : Direction.NORTH;
         final Direction right = axisX ? Direction.EAST : Direction.SOUTH;
         return state
-                .with(UP, attaches(world.getBlockState(pos.up())))
-                .with(DOWN, attaches(world.getBlockState(pos.down())))
-                .with(LEFT, attaches(world.getBlockState(pos.offset(left))))
-                .with(RIGHT, attaches(world.getBlockState(pos.offset(right))));
+                .setValue(UP, attaches(world.getBlockState(pos.above())))
+                .setValue(DOWN, attaches(world.getBlockState(pos.below())))
+                .setValue(LEFT, attaches(world.getBlockState(pos.relative(left))))
+                .setValue(RIGHT, attaches(world.getBlockState(pos.relative(right))));
     }
 
     private static boolean attaches(final BlockState neighbor) {
@@ -94,7 +94,7 @@ public class TCWindow extends Block {
     }
 
     @Override
-    protected void fillStateContainer(final StateContainer.Builder<Block, BlockState> builder) {
+    protected void createBlockStateDefinition(final StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(UP, DOWN, LEFT, RIGHT, AXIS_X);
     }
 }
