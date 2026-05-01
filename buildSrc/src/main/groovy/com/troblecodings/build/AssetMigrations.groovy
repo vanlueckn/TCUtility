@@ -1,6 +1,7 @@
 package com.troblecodings.build
 
 import com.troblecodings.build.steps.FixHashedTextureKeysStep
+import com.troblecodings.build.steps.FluidAssetGenStep
 import com.troblecodings.build.steps.ForgeMarkerBlockstateStep
 import com.troblecodings.build.steps.VanillaTextureRefStep
 
@@ -26,6 +27,7 @@ class AssetMigrations {
                 new FixHashedTextureKeysStep(),
                 new ForgeMarkerBlockstateStep(),
                 new VanillaTextureRefStep(),
+                new FluidAssetGenStep(),
         ]
     }
 }
