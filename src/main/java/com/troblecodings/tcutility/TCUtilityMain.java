@@ -55,10 +55,17 @@ public class TCUtilityMain {
         TCBlocks.initJsonFiles();
         TCItems.initJsonFiles();
 
-        // @Mod.EventBusSubscriber-Annotation auf den Init-Klassen kuemmert
-        // sich um die Registry-Events; doppelte register()-Calls hier
-        // wuerden RegisterEvent zweimal handlen und in 1.19 zu doppelten
-        // Eintraegen mit "already registered"-Errors fuehren.
+        // 1.19.2-Modul-System scannt @Mod.EventBusSubscriber bei Init-Klassen
+        // in Subpackages nicht zuverlaessig auto-discovern -- manuelle
+        // Mod-Bus-Registrierung holt das nach. Die Annotation bleibt fuer den
+        // Fall stehen, dass Forge sie spaeter doch findet (no-op wenn
+        // doppelt: register() ueber Event-Methoden ist idempotent, da Forge
+        // intern dedupliziert).
+        final var modBus = net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext.get()
+                .getModEventBus();
+        modBus.register(TCBlocks.class);
+        modBus.register(TCItems.class);
+        modBus.register(TCFluidsInit.class);
     }
 
     private static Optional<Path> getRessourceLocation(final String location) {

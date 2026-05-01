@@ -30,7 +30,6 @@ import net.minecraft.world.level.material.Material;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fluids.FluidType;
 import net.minecraftforge.fluids.ForgeFlowingFluid;
-import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegisterEvent;
 
@@ -43,7 +42,6 @@ import net.minecraftforge.registries.RegisterEvent;
  * verbunden; FluidType-, Fluid-, Block- und Item-Registrierung passieren
  * im neuen {@link RegisterEvent}-Pattern.
  */
-@Mod.EventBusSubscriber(modid = TCUtilityMain.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class TCFluidsInit {
 
     private TCFluidsInit() {
