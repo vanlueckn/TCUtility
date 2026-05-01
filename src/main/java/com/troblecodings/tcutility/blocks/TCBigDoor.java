@@ -269,19 +269,31 @@ public class TCBigDoor extends Block {
     }
 
     private void propagateState(final Level world, final BlockPos lowerPos,
-            final BlockState lowerState, final net.minecraft.world.level.block.state.properties.Property<?> prop,
+            final BlockState lowerState,
+            final net.minecraft.world.level.block.state.properties.Property<?> prop,
             final Object value) {
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-        final BlockState newLower = lowerState.setValue((net.minecraft.world.level.block.state.properties.Property) prop, (Comparable) value);
-        world.setBlock(lowerPos, newLower, 10);
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-        final BlockState newMiddle = world.getBlockState(lowerPos.above()).setValue(
-                (net.minecraft.world.level.block.state.properties.Property) prop, (Comparable) value);
-        world.setBlock(lowerPos.above(), newMiddle, 10);
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-        final BlockState newUpper = world.getBlockState(lowerPos.above(2)).setValue(
-                (net.minecraft.world.level.block.state.properties.Property) prop, (Comparable) value);
-        world.setBlock(lowerPos.above(2), newUpper, 10);
+        // Defensiv: nur auf TCBigDoor-Bloecke setzen. Falls Middle/Upper aus
+        // einem Strukturbruch heraus fehlen oder schon Air sind, wuerde
+        // setValue auf einer Air-State NPE/IllegalArgument werfen.
+        applyTo(world, lowerPos, lowerState, prop, value);
+        applyTo(world, lowerPos.above(), world.getBlockState(lowerPos.above()), prop, value);
+        applyTo(world, lowerPos.above(2), world.getBlockState(lowerPos.above(2)), prop, value);
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private static void applyTo(final Level world, final BlockPos pos, final BlockState state,
+            final net.minecraft.world.level.block.state.properties.Property<?> prop,
+            final Object value) {
+        if (!(state.getBlock() instanceof TCBigDoor)) {
+            return;
+        }
+        if (!state.hasProperty((net.minecraft.world.level.block.state.properties.Property) prop)) {
+            return;
+        }
+        final BlockState updated = state.setValue(
+                (net.minecraft.world.level.block.state.properties.Property) prop,
+                (Comparable) value);
+        world.setBlock(pos, updated, 10);
     }
 
     private void removeAllParts(final Level world, final BlockPos pos, final BlockState state) {

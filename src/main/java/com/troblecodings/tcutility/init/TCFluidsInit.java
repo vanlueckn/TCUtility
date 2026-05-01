@@ -15,6 +15,8 @@ import com.troblecodings.tcutility.fluids.TCFluidBlock;
 import com.troblecodings.tcutility.utils.FluidCreateInfo;
 import com.troblecodings.tcutility.utils.FluidProperties;
 
+import java.util.function.Consumer;
+
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.Item;
@@ -24,6 +26,7 @@ import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.FlowingFluid;
 import net.minecraft.world.level.material.Material;
+import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fluids.FluidType;
 import net.minecraftforge.fluids.ForgeFlowingFluid;
@@ -80,11 +83,36 @@ public final class TCFluidsInit {
         if (event.getRegistryKey().equals(ForgeRegistries.Keys.FLUID_TYPES)) {
             event.register(ForgeRegistries.Keys.FLUID_TYPES, helper -> {
                 for (final FluidEntry e : entries) {
+                    // 1.19: FluidType selbst kennt keine Texturen mehr; die
+                    // werden client-seitig via IClientFluidTypeExtensions
+                    // gehaengt. initializeClient(Consumer<...>) wird nur
+                    // auf dem Client aufgerufen, daher ist der Capture der
+                    // Resources hier server-safe.
+                    final ResourceLocation still = new ResourceLocation(TCUtilityMain.MODID,
+                            "blocks/" + e.name + "_still");
+                    final ResourceLocation flow = new ResourceLocation(TCUtilityMain.MODID,
+                            "blocks/" + e.name + "_flow");
                     final FluidType type = new FluidType(FluidType.Properties.create()
                             .density(e.info.density)
                             .viscosity(e.info.viscosity)
                             .lightLevel(e.info.luminosity)
-                            .temperature(e.info.temperature));
+                            .temperature(e.info.temperature)) {
+                        @Override
+                        public void initializeClient(
+                                final Consumer<IClientFluidTypeExtensions> consumer) {
+                            consumer.accept(new IClientFluidTypeExtensions() {
+                                @Override
+                                public ResourceLocation getStillTexture() {
+                                    return still;
+                                }
+
+                                @Override
+                                public ResourceLocation getFlowingTexture() {
+                                    return flow;
+                                }
+                            });
+                        }
+                    };
                     e.typeRef.set(type);
                     helper.register(new ResourceLocation(TCUtilityMain.MODID, e.name + "_type"),
                             type);
