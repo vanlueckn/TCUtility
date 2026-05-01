@@ -18,7 +18,7 @@ import net.minecraft.state.EnumProperty;
 import net.minecraft.state.StateContainer;
 import net.minecraft.state.properties.BlockStateProperties;
 import net.minecraft.state.properties.DoorHingeSide;
-import net.minecraft.util.BlockRenderLayer;
+import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Hand;
 import net.minecraft.util.IStringSerializable;
@@ -51,7 +51,7 @@ public class TCBigDoor extends Block {
         }
 
         @Override
-        public String getName() {
+        public String getString() {
             return name;
         }
     }
@@ -98,11 +98,6 @@ public class TCBigDoor extends Block {
     }
 
     @Override
-    public BlockRenderLayer getRenderLayer() {
-        return BlockRenderLayer.CUTOUT;
-    }
-
-    @Override
     public VoxelShape getShape(final BlockState state, final IBlockReader world,
             final BlockPos pos, final ISelectionContext context) {
         // 1:1-Port aus 1.12 BlockBigDoor.getBoundingBox: 4 Facings * 2 Hinges
@@ -136,21 +131,22 @@ public class TCBigDoor extends Block {
     }
 
     @Override
-    public boolean onBlockActivated(final BlockState state, final World world, final BlockPos pos,
-            final PlayerEntity player, final Hand hand, final BlockRayTraceResult hit) {
+    public ActionResultType onBlockActivated(final BlockState state, final World world,
+            final BlockPos pos, final PlayerEntity player, final Hand hand,
+            final BlockRayTraceResult hit) {
         if (state.getMaterial() == Material.IRON) {
-            return false;
+            return ActionResultType.PASS;
         }
         final BlockPos lowerPos = lowerPosOf(state, pos);
         final BlockState lowerState = world.getBlockState(lowerPos);
         if (!(lowerState.getBlock() instanceof TCBigDoor)) {
-            return false;
+            return ActionResultType.PASS;
         }
         final boolean newOpen = !lowerState.get(OPEN);
         propagateState(world, lowerPos, lowerState, OPEN, newOpen);
         world.playEvent(player, newOpen ? openSoundEvent(state) : closeSoundEvent(state),
                 pos, 0);
-        return true;
+        return ActionResultType.func_233537_a_(world.isRemote);
     }
 
     @Override
@@ -273,18 +269,18 @@ public class TCBigDoor extends Block {
     }
 
     private void propagateState(final World world, final BlockPos lowerPos,
-            final BlockState lowerState, final net.minecraft.state.IProperty<?> prop,
+            final BlockState lowerState, final net.minecraft.state.Property<?> prop,
             final Object value) {
         @SuppressWarnings({ "unchecked", "rawtypes" })
-        final BlockState newLower = lowerState.with((net.minecraft.state.IProperty) prop, (Comparable) value);
+        final BlockState newLower = lowerState.with((net.minecraft.state.Property) prop, (Comparable) value);
         world.setBlockState(lowerPos, newLower, 10);
         @SuppressWarnings({ "unchecked", "rawtypes" })
         final BlockState newMiddle = world.getBlockState(lowerPos.up()).with(
-                (net.minecraft.state.IProperty) prop, (Comparable) value);
+                (net.minecraft.state.Property) prop, (Comparable) value);
         world.setBlockState(lowerPos.up(), newMiddle, 10);
         @SuppressWarnings({ "unchecked", "rawtypes" })
         final BlockState newUpper = world.getBlockState(lowerPos.up(2)).with(
-                (net.minecraft.state.IProperty) prop, (Comparable) value);
+                (net.minecraft.state.Property) prop, (Comparable) value);
         world.setBlockState(lowerPos.up(2), newUpper, 10);
     }
 

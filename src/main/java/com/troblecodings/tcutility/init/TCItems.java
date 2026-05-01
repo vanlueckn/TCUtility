@@ -160,6 +160,11 @@ public final class TCItems {
             public float getToughness() {
                 return info.toughness;
             }
+
+            @Override
+            public float getKnockbackResistance() {
+                return 0.0F;
+            }
         };
     }
 

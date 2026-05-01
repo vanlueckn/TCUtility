@@ -1,12 +1,11 @@
 buildscript {
     repositories {
-        maven { url = 'https://files.minecraftforge.net/maven' }
+        maven { url = 'https://maven.minecraftforge.net' }
         maven { url "https://plugins.gradle.org/m2/" }
-        jcenter()
         mavenCentral()
     }
     dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:3.+'
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
         classpath "gradle.plugin.com.matthewprenger:CurseGradle:1.4.0"
     }
 }
@@ -44,12 +43,15 @@ curseforge {
 
 version = ver
 group = 'com.troblecodings'
-archivesBaseName = 'TCUtility-1.14.4'
+archivesBaseName = 'TCUtility-1.16.5'
 
 sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
 
 minecraft {
-    mappings channel: 'snapshot', version: '20191002-1.14.3'
+    // MCP-Snapshot-Mappings fuer 1.16.5 -- selbe Namens-Konvention wie der
+    // 1.14.4-Port, damit die Block/Item-Methoden weiter unter ihren bekannten
+    // Mojang-Independent-Namen aufrufbar bleiben.
+    mappings channel: 'snapshot', version: '20210309-1.16.5'
     runs {
         client {
             workingDirectory project.file('run')
@@ -76,7 +78,7 @@ minecraft {
 }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.14.4-28.2.28'
+    minecraft 'net.minecraftforge:forge:1.16.5-36.2.39'
 }
 
 processResources {
@@ -86,16 +88,15 @@ processResources {
         expand "version": project.version
     }
 
-    // Asset-Format-Migration (1.12.2 -> 1.14.4): Original-JSONs unter
-    // src/main/resources/ bleiben unveraendert, der Build-Output unter
-    // build/resources/main/ wird per Pipeline aus buildSrc/ konvertiert
-    // (Forge-Blockstates -> Vanilla-Format, Texture-Keys mit '#'-Prefix,
-    // Generator-Models pro substituiertem Variant). Neue Migrationsschritte
-    // landen in com.troblecodings.build.AssetMigrations und werden hier
-    // einfach an die Pipeline angehangen.
+    // Asset-Format-Migration. Original-JSONs unter src/main/resources/ liegen
+    // im 1.12.2-Format vor und werden hier auf das jeweilige Ziel-Format
+    // konvertiert; im Build-Output landen die transformierten Files in
+    // build/resources/main/. Fuer den 1.16.5-Port haengen wir die
+    // 1.14->1.16-Schritte (pack_format, etc.) hinten an die 1.12->1.14-Pipe.
     doLast {
         def pipeline = new com.troblecodings.build.AssetMigrationPipeline()
         pipeline.addAll(com.troblecodings.build.AssetMigrations.mc1_12_to_mc1_14())
+        pipeline.addAll(com.troblecodings.build.AssetMigrations.mc1_14_to_mc1_16())
         pipeline.run(destinationDir)
         pipeline.report.each { logger.info(it) }
         logger.lifecycle("[asset-migrate] applied ${pipeline.report.size()} resource transforms")

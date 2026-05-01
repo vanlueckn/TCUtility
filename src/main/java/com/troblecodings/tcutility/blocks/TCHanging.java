@@ -10,7 +10,6 @@ import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.state.DirectionProperty;
 import net.minecraft.state.StateContainer;
 import net.minecraft.state.properties.BlockStateProperties;
-import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Mirror;
 import net.minecraft.util.Rotation;
@@ -33,11 +32,9 @@ public class TCHanging extends Block {
     private final VoxelShape eastShape;
     private final VoxelShape southShape;
     private final VoxelShape westShape;
-    private final BlockRenderLayer renderLayer;
 
     public TCHanging(final BlockCreateInfo blockInfo) {
         super(blockInfo.toProperties());
-        this.renderLayer = TCCube.layerFor(blockInfo.material);
         final int[] b = TCCube.boxArr(blockInfo.box);
         // Default-Orientierung ist UP (Block haengt von der Decke). Die anderen
         // Orientierungen werden ueber Y- bzw. X-Rotationen abgeleitet.
@@ -69,11 +66,6 @@ public class TCHanging extends Block {
             default:
                 return upShape;
         }
-    }
-
-    @Override
-    public BlockRenderLayer getRenderLayer() {
-        return this.renderLayer;
     }
 
     @Override

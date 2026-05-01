@@ -132,7 +132,7 @@ public final class TCFluidsInit {
                         .doesNotBlockMovement()
                         .hardnessAndResistance(100f)
                         .noDrops()
-                        .lightValue(info.luminosity),
+                        .setLightLevel(state -> info.luminosity),
                 info.effect, info.effectDuration, info.effectAmplifier);
         block.setRegistryName(rlSource);
         blockRef.set(block);

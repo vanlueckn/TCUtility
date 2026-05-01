@@ -10,7 +10,6 @@ import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.state.EnumProperty;
 import net.minecraft.state.StateContainer;
 import net.minecraft.state.properties.BlockStateProperties;
-import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Mirror;
 import net.minecraft.util.Rotation;
@@ -26,11 +25,9 @@ public class TCCubeRotationAll extends Block {
     private final VoxelShape yShape;
     private final VoxelShape xShape;
     private final VoxelShape zShape;
-    private final BlockRenderLayer renderLayer;
 
     public TCCubeRotationAll(final BlockCreateInfo blockInfo) {
         super(blockInfo.toProperties());
-        this.renderLayer = TCCube.layerFor(blockInfo.material);
         final int[] b = TCCube.boxArr(blockInfo.box);
         // Y-Achse ist Default; X / Z sind Drehungen um die jeweilige Achse:
         //   X-Achse: y/z werden getauscht und gespiegelt
@@ -54,11 +51,6 @@ public class TCCubeRotationAll extends Block {
             default:
                 return yShape;
         }
-    }
-
-    @Override
-    public BlockRenderLayer getRenderLayer() {
-        return this.renderLayer;
     }
 
     @Override

@@ -9,7 +9,6 @@ import net.minecraft.block.BlockState;
 import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.state.BooleanProperty;
 import net.minecraft.state.StateContainer;
-import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.shapes.ISelectionContext;
@@ -45,22 +44,14 @@ public class TCWindow extends Block {
     private static final VoxelShape SHAPE_X = Block.makeCuboidShape(0, 0, 7, 16, 16, 9);
     private static final VoxelShape SHAPE_Z = Block.makeCuboidShape(7, 0, 0, 9, 16, 16);
 
-    private final BlockRenderLayer renderLayer;
-
     public TCWindow(final BlockCreateInfo blockInfo) {
         super(blockInfo.toProperties());
-        this.renderLayer = TCCube.layerFor(blockInfo.material);
         this.setDefaultState(this.stateContainer.getBaseState()
                 .with(UP, Boolean.FALSE)
                 .with(DOWN, Boolean.FALSE)
                 .with(LEFT, Boolean.FALSE)
                 .with(RIGHT, Boolean.FALSE)
                 .with(AXIS_X, Boolean.FALSE));
-    }
-
-    @Override
-    public BlockRenderLayer getRenderLayer() {
-        return renderLayer;
     }
 
     @Override

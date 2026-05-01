@@ -32,4 +32,15 @@ class AssetMigrations {
                 new FenceWallTagGenStep(),
         ]
     }
+
+    /**
+     * Migrationen 1.14 -> 1.16. Aktuell leer, weil das Asset-Format zwischen
+     * 1.14 und 1.16 fuer Block-/Item-Modelle und Blockstates praktisch
+     * unveraendert ist; pack_format wird direkt in der Original-{@code
+     * pack.mcmeta} gepflegt. Platzhalter, damit kuenftige Renames (z.B. neue
+     * Vanilla-Texture-Pfade) hier sauber dazukommen koennen.
+     */
+    static List<AssetMigrationStep> mc1_14_to_mc1_16() {
+        return []
+    }
 }

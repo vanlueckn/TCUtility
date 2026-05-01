@@ -16,7 +16,7 @@ import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Direction;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
 
 /**
@@ -76,7 +76,7 @@ public class TCBigDoorItem extends Item {
         }
 
         final Direction facing = player.getHorizontalFacing();
-        final Vec3d hit = ctx.getHitVec();
+        final Vector3d hit = ctx.getHitVec();
         final double hitX = hit.x - ctx.getPos().getX();
         final double hitZ = hit.z - ctx.getPos().getZ();
 

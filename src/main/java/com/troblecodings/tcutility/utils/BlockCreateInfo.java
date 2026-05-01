@@ -2,6 +2,7 @@ package com.troblecodings.tcutility.utils;
 
 import java.util.List;
 
+import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.SoundType;
 import net.minecraft.block.material.Material;
@@ -29,40 +30,17 @@ public class BlockCreateInfo {
     }
 
     public Block.Properties toProperties() {
-        // 1.14.4-28.2.28: Block.Properties hat noch kein notSolid() /
-        // noOcclusion() (das kam mit 1.15). Stattdessen wird die Opazitaet
-        // ueber das Material gesteuert -- Material.Builder.notSolid() setzt
-        // die Material-Flags isSolid+isOpaque auf false, wovon Vanilla das
-        // Light-Propagation- und Render-Verhalten ableitet.
-        //
-        // Wenn das JSON fullblock:false setzt, bauen wir hier ein Material-
-        // Derivat mit notSolid() ohne die anderen Eigenschaften des
-        // Originalmaterials zu verlieren (liquid, doesNotBlockMovement,
-        // replaceable). Wenn das Originalmaterial sowieso bereits notSolid
-        // ist (z.B. Material.GLASS, Material.LEAVES), liefert notSolid()
-        // dasselbe Ergebnis -- der Aufruf ist also idempotent.
-        final Material mat = fullblock ? material : asNotSolid(material);
-        return Block.Properties.create(mat)
+        // 1.16.5: AbstractBlock.Properties hat notSolid() direkt -- der
+        // Material.Builder-Workaround aus der 1.14.4-Variante ist hier nicht
+        // mehr noetig. setLightLevel erwartet seit 1.15 eine ToIntFunction
+        // pro BlockState, wir liefern einen konstanten Wert aus dem JSON.
+        AbstractBlock.Properties props = AbstractBlock.Properties.create(material)
                 .hardnessAndResistance(hardness)
                 .sound(soundtype)
-                .lightValue(lightValue);
-    }
-
-    private static Material asNotSolid(final Material original) {
-        if (!original.isSolid() && !original.isOpaque()) {
-            return original;
+                .setLightLevel(state -> lightValue);
+        if (!fullblock) {
+            props = props.notSolid();
         }
-        final Material.Builder builder = new Material.Builder(original.getColor())
-                .notSolid();
-        if (original.isLiquid()) {
-            builder.liquid();
-        }
-        if (!original.blocksMovement()) {
-            builder.doesNotBlockMovement();
-        }
-        if (original.isReplaceable()) {
-            builder.replaceable();
-        }
-        return builder.build();
+        return props;
     }
 }

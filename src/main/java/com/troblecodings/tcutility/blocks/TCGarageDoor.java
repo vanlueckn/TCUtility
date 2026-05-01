@@ -14,6 +14,7 @@ import net.minecraft.state.BooleanProperty;
 import net.minecraft.state.DirectionProperty;
 import net.minecraft.state.StateContainer;
 import net.minecraft.state.properties.BlockStateProperties;
+import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Mirror;
@@ -55,14 +56,14 @@ public class TCGarageDoor extends Block {
     }
 
     @Override
-    public boolean onBlockActivated(final BlockState state, final net.minecraft.world.World world,
-            final BlockPos pos, final PlayerEntity player, final Hand hand,
-            final BlockRayTraceResult hit) {
+    public ActionResultType onBlockActivated(final BlockState state,
+            final net.minecraft.world.World world, final BlockPos pos, final PlayerEntity player,
+            final Hand hand, final BlockRayTraceResult hit) {
         if (state.getMaterial() == Material.IRON) {
-            return false;
+            return ActionResultType.PASS;
         }
         toggleAt(world, pos, state);
-        return true;
+        return ActionResultType.func_233537_a_(world.isRemote);
     }
 
     @Override
@@ -100,7 +101,7 @@ public class TCGarageDoor extends Block {
      */
     public void toggleAt(final net.minecraft.world.World world, final BlockPos pos,
             final BlockState state) {
-        final BlockState toggled = state.cycle(OPEN);
+        final BlockState toggled = state.cycleValue(OPEN);
         world.setBlockState(pos, toggled, 10);
         applyRoll(world, pos, toggled);
         propagateAlongAxis(world, pos, toggled);
@@ -132,7 +133,7 @@ public class TCGarageDoor extends Block {
             for (int i = 1; i < MAX_REACH; i++) {
                 final BlockPos below = pos.down(i);
                 final BlockState belowState = world.getBlockState(below);
-                if (!belowState.isAir(world, below)) {
+                if (!belowState.isAir()) {
                     break;
                 }
                 world.setBlockState(below, gate.getDefaultState()

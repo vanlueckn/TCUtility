@@ -5,7 +5,7 @@ import com.troblecodings.tcutility.utils.BlockCreateInfo;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.BlockRenderLayer;
+import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
@@ -37,19 +37,15 @@ public class TCGarageGate extends TCCubeRotation {
     }
 
     @Override
-    public BlockRenderLayer getRenderLayer() {
-        return BlockRenderLayer.CUTOUT;
-    }
-
-    @Override
-    public boolean onBlockActivated(final BlockState state, final World world, final BlockPos pos,
-            final PlayerEntity player, final Hand hand, final BlockRayTraceResult hit) {
+    public ActionResultType onBlockActivated(final BlockState state, final World world,
+            final BlockPos pos, final PlayerEntity player, final Hand hand,
+            final BlockRayTraceResult hit) {
         for (int i = 1; i < MAX_REACH; i++) {
             final BlockPos above = pos.up(i);
             final BlockState aboveState = world.getBlockState(above);
             if (aboveState.getBlock() instanceof TCGarageDoor) {
                 ((TCGarageDoor) aboveState.getBlock()).toggleAt(world, above, aboveState);
-                return true;
+                return ActionResultType.func_233537_a_(world.isRemote);
             }
             if (!(aboveState.getBlock() instanceof TCGarageGate)) {
                 // Block dazwischen, der weder Gate noch Header ist -- abbrechen.
@@ -59,7 +55,7 @@ public class TCGarageGate extends TCCubeRotation {
         // Hier folgt das 1.12.2-Verhalten: ein Klick auf ein Gate wird auch
         // dann als verarbeitet gemeldet, wenn kein Header gefunden wurde --
         // verhindert, dass man "durch" das Gate ungewollt einen Block setzt.
-        return true;
+        return ActionResultType.func_233537_a_(world.isRemote);
     }
 
     @Override

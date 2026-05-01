@@ -10,7 +10,6 @@ import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.state.DirectionProperty;
 import net.minecraft.state.StateContainer;
 import net.minecraft.state.properties.BlockStateProperties;
-import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Mirror;
 import net.minecraft.util.Rotation;
@@ -27,11 +26,9 @@ public class TCCubeRotation extends Block {
     private final VoxelShape eastShape;
     private final VoxelShape southShape;
     private final VoxelShape westShape;
-    private final BlockRenderLayer renderLayer;
 
     public TCCubeRotation(final BlockCreateInfo blockInfo) {
         super(blockInfo.toProperties());
-        this.renderLayer = TCCube.layerFor(blockInfo.material);
         final int[] b = TCCube.boxArr(blockInfo.box);
         // box ist im 0..16 Bereich; Default ist [0,0,0,16,16,16].
         // North = unmodifiziert, Rotation um Y-Achse:
@@ -61,11 +58,6 @@ public class TCCubeRotation extends Block {
             default:
                 return northShape;
         }
-    }
-
-    @Override
-    public BlockRenderLayer getRenderLayer() {
-        return this.renderLayer;
     }
 
     @Override
