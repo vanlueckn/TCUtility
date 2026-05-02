@@ -29,8 +29,10 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.event.RegisterItemModelsEvent;
 import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
+import net.neoforged.neoforge.client.model.item.DynamicFluidContainerModel;
 
 /**
  * Client-seitige Render-Layer-Registrierung. Loest die 1.14.4-Lösung ab, bei der jeder Block in
@@ -61,6 +63,18 @@ public final class TCRenderTypes {
      * {@link RegisterClientExtensionsEvent#registerFluidType} pro FluidType registriert.
      * Wir leiten Still/Flow-Pfade aus dem JSON-Namen ab (assets/&lt;modid&gt;/textures/blocks/&lt;name&gt;_still.png).
      */
+    /**
+     * 1.21.4: Der DynamicFluidContainerModel-ItemModel-Codec ist nicht mehr Teil des
+     * eingebauten Default-Sets. Wir muessen ihn selbst unter dem alten ID
+     * {@code neoforge:fluid_container} registrieren, sonst lehnt der Codec-Resolver die
+     * generierten Bucket-Item-Models ab und der Renderer fragt das Missing-Texture-Visual ab.
+     */
+    @SubscribeEvent
+    public static void registerItemModelCodecs(final RegisterItemModelsEvent event) {
+        event.register(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
+                "neoforge", "fluid_container"), DynamicFluidContainerModel.Unbaked.MAP_CODEC);
+    }
+
     @SubscribeEvent
     public static void registerFluidExtensions(final RegisterClientExtensionsEvent event) {
         for (final TCFluidsInit.FluidEntry e : TCFluidsInit.entries) {

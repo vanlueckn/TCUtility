@@ -73,6 +73,7 @@ processResources {
         pipeline.addAll(com.troblecodings.build.AssetMigrations.mc1_16_to_mc1_19())
         pipeline.addAll(com.troblecodings.build.AssetMigrations.mc1_19_to_mc1_20())
         pipeline.addAll(com.troblecodings.build.AssetMigrations.mc1_20_to_mc1_21_neoforge())
+        pipeline.addAll(com.troblecodings.build.AssetMigrations.mc1_21_1_to_mc1_21_4_neoforge())
         pipeline.run(destinationDir)
         pipeline.report.each { logger.info(it) }
         logger.lifecycle("[asset-migrate] applied ${pipeline.report.size()} resource transforms")
