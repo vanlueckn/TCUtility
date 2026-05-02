@@ -190,8 +190,8 @@ public class TCGarageDoor extends Block {
         if (rl == null) {
             return null;
         }
-        return ForgeRegistries.BLOCKS
-                .getValue(new ResourceLocation(rl.getNamespace(), rl.getPath() + "_gate"));
+        return BuiltInRegistries.BLOCK
+                .getValue(ResourceLocation.fromNamespaceAndPath(rl.getNamespace(), rl.getPath() + "_gate"));
     }
 
     private static int soundFor(final BlockState state, final boolean opening) {

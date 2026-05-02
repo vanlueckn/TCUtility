@@ -1,111 +1,71 @@
-buildscript {
-    repositories {
-        maven { url = 'https://maven.minecraftforge.net' }
-        maven { url "https://plugins.gradle.org/m2/" }
-        mavenCentral()
-    }
-    dependencies {
-        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '6.0.+', changing: true
-        classpath "gradle.plugin.com.matthewprenger:CurseGradle:1.4.0"
-    }
+plugins {
+    id 'java-library'
+    id 'eclipse'
+    id 'maven-publish'
+    id 'net.neoforged.gradle.userdev' version '7.0.171'
 }
 
-apply plugin: 'net.minecraftforge.gradle'
-apply plugin: 'eclipse'
-apply plugin: 'maven-publish'
-
-apply plugin: "com.matthewprenger.cursegradle"
-
-sourceSets{
+sourceSets {
     main {
         java {
             srcDirs("contentPackLib/src")
         }
-        // Forge-1.20.4-Dev-Mode-Workaround: ohne diese Zeile schreibt Gradle
-        // META-INF/mods.toml in build/resources/main, waehrend die .class-Files
-        // in build/classes/java/main liegen. Forges Mod-Discovery sieht beide
-        // als separate "Mod Files", findet in resources/main keine @Mod-Klasse
-        // und crasht mit "has mods that were not found". Wir kippen die
-        // Resources direkt in den Classes-Output, dann liegt mods.toml neben
-        // den Klassen im gleichen Pfad.
+        // NeoForge-Dev-Mode: ohne diese Zeile schreibt Gradle
+        // META-INF/neoforge.mods.toml in build/resources/main, waehrend die
+        // .class-Files in build/classes/java/main liegen. NeoForge/FML sieht
+        // dann beide Pfade als getrennte "Mod Files", findet in resources/main
+        // keine @Mod-Klasse und crasht beim Client-Start. Wir kippen die
+        // Resources direkt in den Classes-Output.
         output.resourcesDir = java.classesDirectory
     }
 }
 
 def ver = System.getenv("APPVEYOR_BUILD_VERSION")
-if(ver == null)
-	// 1.19.2-FML besteht auf gueltigem Semver in mods.toml; "dev" wird mit
-	// "Illegal version number" abgewiesen. Wir setzen daher einen
-	// expliziten 0.0.0-Dev-Build-Tag fuer lokale Entwicklungslaeufe.
-	ver = '0.0.0-dev'
-
-def key = System.getenv("CURSETOKEN")
-if(key == null)
-	key = 'dev'
-curseforge {
-  apiKey = key
-  project {
-    id = '821776'
-    changelog = file('changelog.md')
-    releaseType = 'release'
-    changelogType = 'markdown'
-    addGameVersion '1.20.4'
-  }
-}
+if (ver == null)
+    ver = '0.0.0-dev'
 
 version = ver
 group = 'com.troblecodings'
-archivesBaseName = 'TCUtility-1.20.4'
+archivesBaseName = 'TCUtility-1.21.1'
 
-// 1.18+ erfordert JDK 17 zur Laufzeit; ForgeGradle benoetigt es auch
-// fuer den Decompile/Reobf-Pfad. Wir lassen Gradle das passende JDK
-// via Toolchain holen.
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+// 1.20.5+ erfordert JDK 21
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
-minecraft {
-    // Mojang's Official-Mappings sind seit 1.18 der Standardpfad;
-    // MCP-Snapshots stoppten bei 1.16.5. Quellcode verwendet daher die
-    // Mojang-Namen (Level statt World, Player statt PlayerEntity, etc.).
-    mappings channel: 'official', version: '1.20.4'
-    runs {
-        client {
-            workingDirectory project.file('run')
-            property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
-            property 'forge.logging.console.level', 'debug'
-            mods {
-                tcutility {
-                    source sourceSets.main
-                }
-            }
-        }
-
-        server {
-            workingDirectory project.file('run')
-            property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
-            property 'forge.logging.console.level', 'debug'
-            mods {
-                tcutility {
-                    source sourceSets.main
-                }
-            }
-        }
-    }
+repositories {
+    maven { url = 'https://maven.neoforged.net/releases' }
+    mavenCentral()
 }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.20.4-49.1.4'
+    implementation 'net.neoforged:neoforge:21.1.228'
+}
+
+runs {
+    configureEach {
+        // Mod-Identification fuer alle Runs
+        modSource project.sourceSets.main
+        systemProperty 'forge.logging.markers', 'REGISTRIES'
+        systemProperty 'forge.logging.console.level', 'debug'
+    }
+
+    client {
+        workingDirectory project.file('run')
+    }
+
+    server {
+        workingDirectory project.file('run')
+    }
 }
 
 processResources {
     inputs.property "version", project.version
 
-    filesMatching("META-INF/mods.toml") {
+    filesMatching("META-INF/neoforge.mods.toml") {
         expand "version": project.version
     }
 
-    // Asset-Format-Migration. Die Pipeline verkettet alle Versions-Spruenge
-    // bis zum Zielformat -- 1.12->1.14, 1.14->1.16, 1.16->1.19, 1.19->1.20.
-    // Original-JSONs unter src/main/resources bleiben unangetastet.
+    // Asset-Format-Migration. Pipeline kombiniert alle Versions-Spruenge
+    // bis 1.20: 1.12->1.14, 1.14->1.16, 1.16->1.19, 1.19->1.20.
     doLast {
         def pipeline = new com.troblecodings.build.AssetMigrationPipeline()
         pipeline.addAll(com.troblecodings.build.AssetMigrations.mc1_12_to_mc1_14())
@@ -121,15 +81,13 @@ processResources {
 jar {
     manifest {
         attributes([
-            "Specification-Title": "TCUtility",
-            "Specification-Vendor": "Troblecodings",
-            "Specification-Version": ver,
-            "Implementation-Title": project.name,
-            "Implementation-Version": ver,
-            "Implementation-Vendor" :"Troblecodings",
+            "Specification-Title"     : "TCUtility",
+            "Specification-Vendor"    : "Troblecodings",
+            "Specification-Version"   : ver,
+            "Implementation-Title"    : project.name,
+            "Implementation-Version"  : ver,
+            "Implementation-Vendor"   : "Troblecodings",
             "Implementation-Timestamp": new Date().format("dd-MM-yyyy'T'HH:mm:ssZ")
         ])
     }
 }
-
-jar.finalizedBy('reobfJar')

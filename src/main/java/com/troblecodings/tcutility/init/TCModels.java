@@ -5,10 +5,10 @@ import com.troblecodings.tcutility.utils.MaterialKind;
 import com.troblecodings.tcutility.utils.MaterialKindRegistry;
 
 import net.minecraft.client.renderer.BiomeColors;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RegisterColorHandlersEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Client-seitige ColorHandler-Registrierung fuer alle Bloecke, deren JSON-Material auf "grass"
@@ -16,8 +16,8 @@ import net.minecraftforge.fml.common.Mod;
  * Grass-Bloecke biome-unabhaengig knallgruen statt biome-spezifisch eingefaerbt. 1.20 entfernt
  * vanilla {@code Material}, daher wird der Vergleich auf den mod-eigenen MaterialKind verlagert.
  */
-@Mod.EventBusSubscriber(modid = TCUtilityMain.MODID,
-        bus = Mod.EventBusSubscriber.Bus.MOD,
+@EventBusSubscriber(modid = TCUtilityMain.MODID,
+        bus = EventBusSubscriber.Bus.MOD,
         value = Dist.CLIENT)
 public final class TCModels {
 

@@ -24,10 +24,10 @@ import com.troblecodings.tcutility.utils.MaterialKindRegistry;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 
 /**
  * Client-seitige Render-Layer-Registrierung. Loest die 1.14.4-Lösung ab, bei der jeder Block in
@@ -37,7 +37,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
  * Glastuer TRANSLUCENT braucht. 1.20: vanilla {@code Material} ist entfernt; wir lesen den
  * mod-internen MaterialKind aus {@link MaterialKindRegistry}.
  */
-@Mod.EventBusSubscriber(modid = TCUtilityMain.MODID, bus = Mod.EventBusSubscriber.Bus.MOD,
+@EventBusSubscriber(modid = TCUtilityMain.MODID, bus = EventBusSubscriber.Bus.MOD,
         value = Dist.CLIENT)
 public final class TCRenderTypes {
 

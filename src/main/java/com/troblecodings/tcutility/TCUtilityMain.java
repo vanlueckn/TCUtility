@@ -12,9 +12,10 @@ import com.troblecodings.tcutility.init.TCFluidsInit;
 import com.troblecodings.tcutility.init.TCItems;
 import com.troblecodings.tcutility.init.TCTabs;
 
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.common.Mod;
 
 @Mod(TCUtilityMain.MODID)
 public class TCUtilityMain {
@@ -23,23 +24,21 @@ public class TCUtilityMain {
     public static final Logger LOG = LogManager.getLogger();
     public static ContentPackHandler fileHandler;
 
-    public TCUtilityMain() {
+    public TCUtilityMain(final IEventBus modBus, final ModContainer container) {
         fileHandler = new ContentPackHandler(MODID, "assets/" + MODID, LOG,
-                name -> getRessourceLocation(name).orElse(null));
+                name -> getRessourceLocation(name).orElse(null), modBus);
 
-        // Block-/Item-/Fluid-Konstruktion ist seit 1.19 strikt an die
-        // jeweiligen RegisterEvents gebunden (frozen registries) -- hier nur
-        // die JSON-Parse-Phase, die echten Instanzen entstehen in den
-        // Subscribern.
+        // Block-/Item-/Fluid-Konstruktion ist seit 1.19 strikt an die jeweiligen
+        // RegisterEvents gebunden (frozen registries) -- hier nur die JSON-Parse-Phase,
+        // die echten Instanzen entstehen in den Subscribern.
         TCFluidsInit.initJsonFiles();
         TCItems.init();
         TCBlocks.init();
         TCBlocks.initJsonFiles();
         TCItems.initJsonFiles();
 
-        // 1.19's modlauncher findet @Mod.EventBusSubscriber-Annotationen in
-        // Subpackages nicht zuverlaessig auto-discovern -- daher manuell.
-        final var modBus = FMLJavaModLoadingContext.get().getModEventBus();
+        // NeoForge 1.21: der Mod-Bus wird im @Mod-Konstruktor injiziert; manuelle
+        // Subscriber-Registrierung weiter wie zuvor.
         TCTabs.REGISTRY.register(modBus);
         modBus.register(TCBlocks.class);
         modBus.register(TCItems.class);
@@ -48,10 +47,9 @@ public class TCUtilityMain {
 
     /**
      * 1.19+ verwendet einen Modul-Classloader, der Mod-Resources unter dem
-     * {@code union:}-URL-Schema rausgibt -- {@code Class.getResource} +
-     * {@code Paths.get(URI)} schlaegt damit fehl. Stattdessen besorgen wir
-     * uns die Pfade direkt aus dem Forge-{@code IModFile}, das fuer alle
-     * Schema-Varianten einen NIO-{@code Path} liefert.
+     * {@code union:}-URL-Schema rausgibt; {@code Class.getResource} + {@code Paths.get(URI)}
+     * schlaegt damit fehl. Wir holen die Pfade direkt aus dem ModFile, das fuer alle Schema-
+     * Varianten einen NIO-Path liefert.
      */
     private static Optional<Path> getRessourceLocation(final String location) {
         try {

@@ -8,7 +8,7 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
-import net.minecraftforge.fluids.ForgeFlowingFluid;
+import net.neoforged.neoforge.fluids.BaseFlowingFluid;
 
 /**
  * 1:1-Replikation des 1.12.2-Forge-Verhaltens fuer "Gas"-Fluids (negative density), portiert
@@ -32,7 +32,7 @@ import net.minecraftforge.fluids.ForgeFlowingFluid;
  * <p>Source-Konvergenz zu neuen Source-Bloecken (wie bei Wasser) gibt es bewusst nicht; gas-
  * artige Fluids im 1.12.2-Modell vermehren sich nur ausgehend von der gesetzten Quelle.
  */
-public abstract class TCUpwardFlowingFluid extends ForgeFlowingFluid {
+public abstract class TCUpwardFlowingFluid extends BaseFlowingFluid {
 
     /** Wie viele Quanta die Quelle effektiv ans Umfeld weitergibt (limitiert horizontale Reichweite). */
     private final int sourceQuanta;

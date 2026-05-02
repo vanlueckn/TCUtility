@@ -22,9 +22,9 @@ import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.neoforged.bus.api.SubscribeEvent;
 import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegisterEvent;
+import net.neoforged.neoforge.registries.RegisterEvent;
 
 /**
  * 1.19.2: {@code Item.<init>} ruft (wie Block.<init>) intern
@@ -84,19 +84,19 @@ public final class TCItems {
 
     @SubscribeEvent
     public static void onRegister(final RegisterEvent event) {
-        if (!event.getRegistryKey().equals(ForgeRegistries.Keys.ITEMS)) {
+        if (!event.getRegistryKey().equals(Registries.ITEM)) {
             return;
         }
-        event.register(ForgeRegistries.Keys.ITEMS, helper -> {
+        event.register(Registries.ITEM, helper -> {
             for (final ArmorSpec spec : armorSpecs) {
                 final ArmorItem armorItem = new ArmorItem(spec.material, spec.type,
                         new Item.Properties());
-                helper.register(new ResourceLocation(TCUtilityMain.MODID, spec.registryName),
+                helper.register(ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID, spec.registryName),
                         armorItem);
             }
             for (final String itemName : itemNames) {
                 final Item item = new Item(new Item.Properties());
-                helper.register(new ResourceLocation(TCUtilityMain.MODID, itemName), item);
+                helper.register(ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID, itemName), item);
             }
         });
     }

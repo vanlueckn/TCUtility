@@ -38,9 +38,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.neoforged.bus.api.SubscribeEvent;
 import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegisterEvent;
+import net.neoforged.neoforge.registries.RegisterEvent;
 
 /**
  * Sammelt im Mod-Konstruktor nur Block-Spezifikationen (Name+Typ+Properties)
@@ -100,7 +100,7 @@ public final class TCBlocks {
             for (final String state : states) {
                 final BlockTypes type = Enum.valueOf(BlockTypes.class, state.toUpperCase());
                 final String registryName = type.getRegistryName(objectname);
-                final ResourceLocation rl = new ResourceLocation(TCUtilityMain.MODID, registryName);
+                final ResourceLocation rl = ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID, registryName);
                 blockSpecs.add(new BlockSpec(objectname, rl, type, blockInfo));
             }
         }
@@ -108,8 +108,8 @@ public final class TCBlocks {
 
     @SubscribeEvent
     public static void onRegister(final RegisterEvent event) {
-        if (event.getRegistryKey().equals(ForgeRegistries.Keys.BLOCKS)) {
-            event.register(ForgeRegistries.Keys.BLOCKS, helper -> {
+        if (event.getRegistryKey().equals(Registries.BLOCK)) {
+            event.register(Registries.BLOCK, helper -> {
                 for (final BlockSpec spec : blockSpecs) {
                     final Block block = constructBlock(spec.type, spec.info);
                     spec.constructedBlock = block;
@@ -122,27 +122,27 @@ public final class TCBlocks {
                         spec.gateBlock = gate;
                         blocksToRegister.add(gate);
                         MaterialKindRegistry.put(gate, spec.info.kind);
-                        final ResourceLocation gateRl = new ResourceLocation(
+                        final ResourceLocation gateRl = ResourceLocation.fromNamespaceAndPath(
                                 TCUtilityMain.MODID, spec.rl.getPath() + "_gate");
                         blockEntries.add(Map.entry(gateRl, gate));
                         helper.register(gateRl, gate);
                     }
                 }
             });
-        } else if (event.getRegistryKey().equals(ForgeRegistries.Keys.ITEMS)) {
-            event.register(ForgeRegistries.Keys.ITEMS, helper -> {
+        } else if (event.getRegistryKey().equals(Registries.ITEM)) {
+            event.register(Registries.ITEM, helper -> {
                 for (final BlockSpec spec : blockSpecs) {
                     final Block block = spec.constructedBlock;
                     if (block == null) {
                         continue;
                     }
                     if (block instanceof TCDoor) {
-                        helper.register(new ResourceLocation(TCUtilityMain.MODID,
+                        helper.register(ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID,
                                 "door_" + spec.objectName), new TCDoorItem(block));
                         continue;
                     }
                     if (block instanceof TCBigDoor) {
-                        helper.register(new ResourceLocation(TCUtilityMain.MODID,
+                        helper.register(ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID,
                                 "bigdoor_" + spec.objectName), new TCBigDoorItem(block));
                         continue;
                     }
