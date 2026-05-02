@@ -16,8 +16,7 @@ import com.troblecodings.tcutility.fluids.TCUpwardFlowingFluid;
 import com.troblecodings.tcutility.utils.FluidCreateInfo;
 import com.troblecodings.tcutility.utils.FluidProperties;
 
-import java.util.function.Consumer;
-
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.Item;
@@ -27,11 +26,10 @@ import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.FlowingFluid;
 import net.minecraft.world.level.material.MapColor;
-import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.fluids.FluidType;
 import net.neoforged.neoforge.fluids.BaseFlowingFluid;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.fluids.FluidType;
+import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import net.neoforged.neoforge.registries.RegisterEvent;
 
 /**
@@ -48,14 +46,18 @@ public final class TCFluidsInit {
     private TCFluidsInit() {
     }
 
-    private static final class FluidEntry {
-        final String name;
-        final FluidCreateInfo info;
-        final AtomicReference<FluidType> typeRef = new AtomicReference<>();
-        final AtomicReference<FlowingFluid> sourceRef = new AtomicReference<>();
-        final AtomicReference<FlowingFluid> flowingRef = new AtomicReference<>();
-        final AtomicReference<LiquidBlock> blockRef = new AtomicReference<>();
-        final AtomicReference<Item> bucketRef = new AtomicReference<>();
+    /**
+     * Package-private damit TCRenderTypes (Dist.CLIENT) im RegisterClientExtensionsEvent
+     * direkt ueber die FluidType+Texture-Paths iterieren kann.
+     */
+    public static final class FluidEntry {
+        public final String name;
+        public final FluidCreateInfo info;
+        public final AtomicReference<FluidType> typeRef = new AtomicReference<>();
+        public final AtomicReference<FlowingFluid> sourceRef = new AtomicReference<>();
+        public final AtomicReference<FlowingFluid> flowingRef = new AtomicReference<>();
+        public final AtomicReference<LiquidBlock> blockRef = new AtomicReference<>();
+        public final AtomicReference<Item> bucketRef = new AtomicReference<>();
 
         FluidEntry(final String name, final FluidCreateInfo info) {
             this.name = name;
@@ -63,7 +65,7 @@ public final class TCFluidsInit {
         }
     }
 
-    private static final List<FluidEntry> entries = new ArrayList<>();
+    public static final List<FluidEntry> entries = new ArrayList<>();
 
     /**
      * Reine Block-Liste fuer das client-seitige Render-Layer-Setup.
@@ -84,39 +86,16 @@ public final class TCFluidsInit {
         if (event.getRegistryKey().equals(NeoForgeRegistries.Keys.FLUID_TYPES)) {
             event.register(NeoForgeRegistries.Keys.FLUID_TYPES, helper -> {
                 for (final FluidEntry e : entries) {
-                    // 1.19: FluidType selbst kennt keine Texturen mehr; die
-                    // werden client-seitig via IClientFluidTypeExtensions
-                    // gehaengt. initializeClient(Consumer<...>) wird nur
-                    // auf dem Client aufgerufen, daher ist der Capture der
-                    // Resources hier server-safe.
-                    final ResourceLocation still = ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID,
-                            "blocks/" + e.name + "_still");
-                    final ResourceLocation flow = ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID,
-                            "blocks/" + e.name + "_flow");
+                    // 1.21: FluidType.initializeClient ist deprecated; Texture-Wiring laeuft
+                    // jetzt ueber RegisterClientExtensionsEvent (siehe TCRenderTypes#registerFluidExtensions).
                     final FluidType type = new FluidType(FluidType.Properties.create()
                             .density(e.info.density)
                             .viscosity(e.info.viscosity)
                             .lightLevel(e.info.luminosity)
-                            .temperature(e.info.temperature)) {
-                        @Override
-                        public void initializeClient(
-                                final Consumer<IClientFluidTypeExtensions> consumer) {
-                            consumer.accept(new IClientFluidTypeExtensions() {
-                                @Override
-                                public ResourceLocation getStillTexture() {
-                                    return still;
-                                }
-
-                                @Override
-                                public ResourceLocation getFlowingTexture() {
-                                    return flow;
-                                }
-                            });
-                        }
-                    };
+                            .temperature(e.info.temperature));
                     e.typeRef.set(type);
-                    helper.register(ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID, e.name + "_type"),
-                            type);
+                    helper.register(ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID,
+                            e.name + "_type"), type);
                 }
             });
         } else if (event.getRegistryKey().equals(Registries.FLUID)) {
@@ -153,7 +132,10 @@ public final class TCFluidsInit {
         } else if (event.getRegistryKey().equals(Registries.BLOCK)) {
             event.register(Registries.BLOCK, helper -> {
                 for (final FluidEntry e : entries) {
-                    final TCFluidBlock block = new TCFluidBlock(e.sourceRef::get,
+                    // 1.21: LiquidBlock-Ctor nimmt direkt FlowingFluid (kein Supplier mehr).
+                    // Der FLUIDS-RegisterEvent laeuft vor BLOCKS, daher ist sourceRef hier
+                    // bereits aufgeloest.
+                    final TCFluidBlock block = new TCFluidBlock(e.sourceRef.get(),
                             BlockBehaviour.Properties.of()
                                     .mapColor(MapColor.WATER)
                                     .replaceable()
@@ -166,18 +148,19 @@ public final class TCFluidsInit {
                             e.info.effect, e.info.effectDuration, e.info.effectAmplifier);
                     e.blockRef.set(block);
                     blocksToRegister.add(block);
-                    helper.register(ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID, e.name), block);
+                    helper.register(ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID,
+                            e.name), block);
                 }
             });
         } else if (event.getRegistryKey().equals(Registries.ITEM)) {
             event.register(Registries.ITEM, helper -> {
                 for (final FluidEntry e : entries) {
-                    final BucketItem bucket = new BucketItem(e.sourceRef::get,
+                    // 1.21: BucketItem-Ctor nimmt direkt Fluid statt Supplier<Fluid>.
+                    final BucketItem bucket = new BucketItem(e.sourceRef.get(),
                             new Item.Properties().stacksTo(1).craftRemainder(Items.BUCKET));
                     e.bucketRef.set(bucket);
-                    helper.register(
-                            ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID, e.name + "_bucket"),
-                            bucket);
+                    helper.register(ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID,
+                            e.name + "_bucket"), bucket);
                 }
             });
         }

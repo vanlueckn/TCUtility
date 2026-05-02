@@ -32,9 +32,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.neoforged.neoforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
  * 1.20.1: CreativeModeTabs werden via {@link DeferredRegister} fuer
@@ -50,25 +50,25 @@ public final class TCTabs {
     public static final DeferredRegister<CreativeModeTab> REGISTRY =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, TCUtilityMain.MODID);
 
-    public static final DeferredHolder<CreativeModeTab> SPECIAL = REGISTRY.register("tcspecial",
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> SPECIAL = REGISTRY.register("tcspecial",
             tab(() -> new ItemStack(Blocks.GLASS_PANE), "itemGroup.tcspecial",
                     TCTabs::populateSpecial));
-    public static final DeferredHolder<CreativeModeTab> BLOCKS = REGISTRY.register("tcblocks",
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> BLOCKS = REGISTRY.register("tcblocks",
             tab(() -> new ItemStack(Blocks.OAK_PLANKS), "itemGroup.tcblocks",
                     TCTabs::populateBlocks));
-    public static final DeferredHolder<CreativeModeTab> SLABS = REGISTRY.register("tcslabs",
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> SLABS = REGISTRY.register("tcslabs",
             tab(() -> new ItemStack(Blocks.OAK_SLAB), "itemGroup.tcslabs",
                     TCTabs::populateSlabs));
-    public static final DeferredHolder<CreativeModeTab> STAIRS = REGISTRY.register("tcstairs",
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> STAIRS = REGISTRY.register("tcstairs",
             tab(() -> new ItemStack(Blocks.OAK_STAIRS), "itemGroup.tcstairs",
                     TCTabs::populateStairs));
-    public static final DeferredHolder<CreativeModeTab> FENCE = REGISTRY.register("tcfence",
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> FENCE = REGISTRY.register("tcfence",
             tab(() -> new ItemStack(Blocks.OAK_FENCE), "itemGroup.tcfence",
                     TCTabs::populateFence));
-    public static final DeferredHolder<CreativeModeTab> DOORS = REGISTRY.register("tcdoors",
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> DOORS = REGISTRY.register("tcdoors",
             tab(() -> new ItemStack(Items.OAK_DOOR), "itemGroup.tcdoors",
                     TCTabs::populateDoors));
-    public static final DeferredHolder<CreativeModeTab> ITEMS = REGISTRY.register("tcitems",
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> ITEMS = REGISTRY.register("tcitems",
             tab(() -> new ItemStack(Items.PAPER), "itemGroup.tcitems",
                     TCTabs::populateItems));
 
@@ -158,7 +158,8 @@ public final class TCTabs {
     }
 
     private static void forEachModItem(final java.util.function.Consumer<Item> sink) {
-        for (final Item item : BuiltInRegistries.ITEM.getValues()) {
+        // 1.21: Vanilla Registry hat kein getValues() -- iteriert direkt (Iterable<T>).
+        for (final Item item : BuiltInRegistries.ITEM) {
             final var rl = BuiltInRegistries.ITEM.getKey(item);
             if (rl != null && TCUtilityMain.MODID.equals(rl.getNamespace())) {
                 sink.accept(item);

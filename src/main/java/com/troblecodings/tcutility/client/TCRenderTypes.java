@@ -21,13 +21,16 @@ import com.troblecodings.tcutility.init.TCFluidsInit;
 import com.troblecodings.tcutility.utils.MaterialKind;
 import com.troblecodings.tcutility.utils.MaterialKindRegistry;
 
-import net.minecraft.world.level.block.Block;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.Block;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
+import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
 
 /**
  * Client-seitige Render-Layer-Registrierung. Loest die 1.14.4-Lösung ab, bei der jeder Block in
@@ -37,8 +40,7 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
  * Glastuer TRANSLUCENT braucht. 1.20: vanilla {@code Material} ist entfernt; wir lesen den
  * mod-internen MaterialKind aus {@link MaterialKindRegistry}.
  */
-@EventBusSubscriber(modid = TCUtilityMain.MODID, bus = EventBusSubscriber.Bus.MOD,
-        value = Dist.CLIENT)
+@EventBusSubscriber(modid = TCUtilityMain.MODID, value = Dist.CLIENT)
 public final class TCRenderTypes {
 
     private TCRenderTypes() {
@@ -51,6 +53,32 @@ public final class TCRenderTypes {
         }
         for (final Block fluidBlock : TCFluidsInit.blocksToRegister) {
             ItemBlockRenderTypes.setRenderLayer(fluidBlock, RenderType.translucent());
+        }
+    }
+
+    /**
+     * 1.21: {@code FluidType#initializeClient} ist deprecated. Texturen werden jetzt ueber
+     * {@link RegisterClientExtensionsEvent#registerFluidType} pro FluidType registriert.
+     * Wir leiten Still/Flow-Pfade aus dem JSON-Namen ab (assets/&lt;modid&gt;/textures/blocks/&lt;name&gt;_still.png).
+     */
+    @SubscribeEvent
+    public static void registerFluidExtensions(final RegisterClientExtensionsEvent event) {
+        for (final TCFluidsInit.FluidEntry e : TCFluidsInit.entries) {
+            final ResourceLocation still = ResourceLocation.fromNamespaceAndPath(
+                    TCUtilityMain.MODID, "blocks/" + e.name + "_still");
+            final ResourceLocation flow = ResourceLocation.fromNamespaceAndPath(
+                    TCUtilityMain.MODID, "blocks/" + e.name + "_flow");
+            event.registerFluidType(new IClientFluidTypeExtensions() {
+                @Override
+                public ResourceLocation getStillTexture() {
+                    return still;
+                }
+
+                @Override
+                public ResourceLocation getFlowingTexture() {
+                    return flow;
+                }
+            }, e.typeRef.get());
         }
     }
 

@@ -132,9 +132,8 @@ public class TCBigDoor extends Block {
     }
 
     @Override
-    public InteractionResult use(final BlockState state, final Level world,
-            final BlockPos pos, final Player player, final InteractionHand hand,
-            final BlockHitResult hit) {
+    protected InteractionResult useWithoutItem(final BlockState state, final Level world,
+            final BlockPos pos, final Player player, final BlockHitResult hit) {
         if (MaterialKindRegistry.get(state.getBlock()) == MaterialKind.METAL) {
             return InteractionResult.PASS;
         }
@@ -167,7 +166,7 @@ public class TCBigDoor extends Block {
                         || !(lowerState.getBlock() instanceof TCBigDoor)) {
                     world.setBlock(pos, Blocks.AIR.defaultBlockState(), 35);
                 } else if (!(fromBlock instanceof TCBigDoor)) {
-                    middleState.neighborChanged(world, middle, fromBlock, fromPos, isMoving);
+                    middleState.handleNeighborChanged(world, middle, fromBlock, fromPos, isMoving);
                 }
                 return;
             }
@@ -180,7 +179,7 @@ public class TCBigDoor extends Block {
                         || !(upperState.getBlock() instanceof TCBigDoor)) {
                     world.setBlock(pos, Blocks.AIR.defaultBlockState(), 35);
                 } else if (!(fromBlock instanceof TCBigDoor)) {
-                    lowerState.neighborChanged(world, lower, fromBlock, fromPos, isMoving);
+                    lowerState.handleNeighborChanged(world, lower, fromBlock, fromPos, isMoving);
                 }
                 return;
             }

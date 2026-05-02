@@ -34,12 +34,12 @@ import com.troblecodings.tcutility.utils.BlockCreateInfo;
 import com.troblecodings.tcutility.utils.BlockProperties;
 import com.troblecodings.tcutility.utils.MaterialKindRegistry;
 
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.minecraftforge.registries.ForgeRegistries;
 import net.neoforged.neoforge.registries.RegisterEvent;
 
 /**

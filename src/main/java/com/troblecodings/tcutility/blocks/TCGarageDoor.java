@@ -23,7 +23,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 /**
  * Rolltor-Header. Wenn man den Block aktiviert, rollt das Tor unter ihm
@@ -57,9 +57,9 @@ public class TCGarageDoor extends Block {
     }
 
     @Override
-    public InteractionResult use(final BlockState state,
+    protected InteractionResult useWithoutItem(final BlockState state,
             final net.minecraft.world.level.Level world, final BlockPos pos, final Player player,
-            final InteractionHand hand, final BlockHitResult hit) {
+            final BlockHitResult hit) {
         if (MaterialKindRegistry.get(state.getBlock()) == MaterialKind.METAL) {
             return InteractionResult.PASS;
         }
@@ -191,7 +191,7 @@ public class TCGarageDoor extends Block {
             return null;
         }
         return BuiltInRegistries.BLOCK
-                .getValue(ResourceLocation.fromNamespaceAndPath(rl.getNamespace(), rl.getPath() + "_gate"));
+                .get(ResourceLocation.fromNamespaceAndPath(rl.getNamespace(), rl.getPath() + "_gate"));
     }
 
     private static int soundFor(final BlockState state, final boolean opening) {

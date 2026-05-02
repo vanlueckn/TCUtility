@@ -37,9 +37,8 @@ public class TCGarageGate extends TCCubeRotation {
     }
 
     @Override
-    public InteractionResult use(final BlockState state, final Level world,
-            final BlockPos pos, final Player player, final InteractionHand hand,
-            final BlockHitResult hit) {
+    protected InteractionResult useWithoutItem(final BlockState state, final Level world,
+            final BlockPos pos, final Player player, final BlockHitResult hit) {
         for (int i = 1; i < MAX_REACH; i++) {
             final BlockPos above = pos.above(i);
             final BlockState aboveState = world.getBlockState(above);

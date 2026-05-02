@@ -16,9 +16,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
  * Grass-Bloecke biome-unabhaengig knallgruen statt biome-spezifisch eingefaerbt. 1.20 entfernt
  * vanilla {@code Material}, daher wird der Vergleich auf den mod-eigenen MaterialKind verlagert.
  */
-@EventBusSubscriber(modid = TCUtilityMain.MODID,
-        bus = EventBusSubscriber.Bus.MOD,
-        value = Dist.CLIENT)
+@EventBusSubscriber(modid = TCUtilityMain.MODID, value = Dist.CLIENT)
 public final class TCModels {
 
     private TCModels() {
