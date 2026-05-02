@@ -36,13 +36,9 @@ public final class TCModels {
         });
     }
 
-    @SubscribeEvent
-    public static void registerItemColor(final RegisterColorHandlersEvent.Item event) {
-        TCBlocks.blocksToRegister.forEach(block -> {
-            if (MaterialKindRegistry.get(block) == MaterialKind.GRASS) {
-                event.getItemColors().register((stack, tintIndex) -> 0xFF5E7A39,
-                        block.asItem());
-            }
-        });
-    }
+    // 1.21.4: RegisterColorHandlersEvent.Item ist entfernt -- Item-Tints laufen jetzt rein
+    // ueber JSON-{@code ItemTintSources} (data-driven). Der dynamische Grass-Item-Tint laesst
+    // sich damit nicht mehr API-seitig hinkleben; Inventarbild der Grass-Variante zeigt damit
+    // den statischen Texture-Wert ohne Biome-Faerbung. Zugehoeriger Welt-Tint laeuft weiter
+    // ueber den Block-ColorHandler, daher wird der platzierte Block korrekt biome-eingefaerbt.
 }

@@ -44,7 +44,7 @@ public class TCGarageGate extends TCCubeRotation {
             final BlockState aboveState = world.getBlockState(above);
             if (aboveState.getBlock() instanceof TCGarageDoor) {
                 ((TCGarageDoor) aboveState.getBlock()).toggleAt(world, above, aboveState);
-                return InteractionResult.sidedSuccess(world.isClientSide);
+                return InteractionResult.SUCCESS;
             }
             if (!(aboveState.getBlock() instanceof TCGarageGate)) {
                 // Block dazwischen, der weder Gate noch Header ist -- abbrechen.
@@ -54,7 +54,7 @@ public class TCGarageGate extends TCCubeRotation {
         // Hier folgt das 1.12.2-Verhalten: ein Klick auf ein Gate wird auch
         // dann als verarbeitet gemeldet, wenn kein Header gefunden wurde --
         // verhindert, dass man "durch" das Gate ungewollt einen Block setzt.
-        return InteractionResult.sidedSuccess(world.isClientSide);
+        return InteractionResult.SUCCESS;
     }
 
     @Override

@@ -2,7 +2,7 @@ package com.troblecodings.tcutility.fluids;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.world.level.Level;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.material.Fluid;
@@ -47,7 +47,8 @@ public abstract class TCUpwardFlowingFluid extends BaseFlowingFluid {
     private static final int COLUMN_LEVEL = 7;
 
     @Override
-    protected FluidState getNewLiquid(final Level level, final BlockPos pos, final BlockState state) {
+    protected FluidState getNewLiquid(final ServerLevel level, final BlockPos pos,
+            final BlockState state) {
         // 1.12.2-hasVerticalFlow: same fluid darunter -> Level wird auf voll geclampt
         final FluidState below = level.getFluidState(pos.below());
         if (below.getType().isSame(this) && !below.isEmpty()) {
@@ -71,19 +72,20 @@ public abstract class TCUpwardFlowingFluid extends BaseFlowingFluid {
     }
 
     @Override
-    protected void spread(final Level level, final BlockPos pos, final FluidState state) {
+    protected void spread(final ServerLevel level, final BlockPos pos, final BlockState here,
+            final FluidState state) {
         if (state.isEmpty()) {
             return;
         }
-        final BlockState here = level.getBlockState(pos);
 
-        // 1) UP first: Spalte waechst mit fixed COLUMN_LEVEL (Quanta 7)
+        // 1) UP first: Spalte waechst mit fixed COLUMN_LEVEL (Quanta 7).
+        //    1.21.4: canSpreadTo ist privat geworden -- wir pruefen direkt, ob das
+        //    Ziel-FluidState durch unseren neuen Fluid ersetzt werden kann.
         final BlockPos abovePos = pos.above();
         final BlockState aboveState = level.getBlockState(abovePos);
         final FluidState aboveFluid = level.getFluidState(abovePos);
         final FluidState upFlow = this.getFlowing(COLUMN_LEVEL, false);
-        if (this.canSpreadTo(level, pos, here, Direction.UP, abovePos, aboveState, aboveFluid,
-                upFlow.getType())) {
+        if (canFlowInto(level, abovePos, aboveState, aboveFluid, upFlow.getType(), Direction.UP)) {
             this.spreadTo(level, abovePos, aboveState, Direction.UP, upFlow);
             return; // 1.12 early-return: vertikaler Flow unterdrueckt horizontalen im selben Tick
         }
@@ -104,11 +106,25 @@ public abstract class TCUpwardFlowingFluid extends BaseFlowingFluid {
             final BlockPos sidePos = pos.relative(dir);
             final BlockState sideState = level.getBlockState(sidePos);
             final FluidState sideFluid = level.getFluidState(sidePos);
-            if (this.canSpreadTo(level, pos, here, dir, sidePos, sideState, sideFluid,
-                    sideFlow.getType())) {
+            if (canFlowInto(level, sidePos, sideState, sideFluid, sideFlow.getType(), dir)) {
                 this.spreadTo(level, sidePos, sideState, dir, sideFlow);
             }
         }
+    }
+
+    /**
+     * Vereinfachter Ersatz fuer das in 1.21.4 privat gewordene {@code canSpreadTo}: wir pruefen,
+     * ob (a) das Ziel-FluidState durch den neuen Fluid in der gegebenen Richtung ersetzbar ist,
+     * (b) der Block dort Air ist oder selbst replaceable. Wand-Pass-Through-Logik (Fences/Walls)
+     * lassen wir aus -- fuer Steam ist das in der Praxis irrelevant.
+     */
+    private boolean canFlowInto(final ServerLevel level, final BlockPos targetPos,
+            final BlockState targetState, final FluidState targetFluid, final Fluid newFluid,
+            final Direction direction) {
+        if (!targetFluid.canBeReplacedWith(level, targetPos, newFluid, direction)) {
+            return false;
+        }
+        return targetState.isAir() || targetState.canBeReplaced();
     }
 
     public static class Source extends TCUpwardFlowingFluid {

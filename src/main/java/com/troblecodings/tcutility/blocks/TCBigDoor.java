@@ -14,7 +14,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -57,7 +56,7 @@ public class TCBigDoor extends Block {
         }
     }
 
-    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final net.minecraft.world.level.block.state.properties.EnumProperty<net.minecraft.core.Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final BooleanProperty OPEN = BlockStateProperties.OPEN;
     public static final EnumProperty<DoorHingeSide> HINGE = BlockStateProperties.DOOR_HINGE;
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
@@ -146,16 +145,18 @@ public class TCBigDoor extends Block {
         propagateState(world, lowerPos, lowerState, OPEN, newOpen);
         world.levelEvent(player, newOpen ? openSoundEvent(state) : closeSoundEvent(state),
                 pos, 0);
-        return InteractionResult.sidedSuccess(world.isClientSide);
+        return InteractionResult.SUCCESS;
     }
 
     @Override
-    public void neighborChanged(final BlockState state, final Level world, final BlockPos pos,
-            final Block fromBlock, final BlockPos fromPos, final boolean isMoving) {
+    protected void neighborChanged(final BlockState state, final Level world, final BlockPos pos,
+            final Block fromBlock, final net.minecraft.world.level.redstone.Orientation orientation,
+            final boolean isMoving) {
         // 1:1-Port aus 1.12 BlockDoor.neighborChanged: UPPER und MIDDLE
         // pruefen Struktur-Integritaet und delegieren Redstone an LOWER;
         // LOWER pruefst Untergrund + alle drei Glieder, dropped beim
         // Wegbrechen, und schaltet Powered/Open synchron auf Redstone.
+        // 1.21.4: handleNeighborChanged nimmt Orientation statt BlockPos.
         switch (state.getValue(THIRD)) {
             case UPPER: {
                 final BlockPos middle = pos.below();
@@ -166,7 +167,7 @@ public class TCBigDoor extends Block {
                         || !(lowerState.getBlock() instanceof TCBigDoor)) {
                     world.setBlock(pos, Blocks.AIR.defaultBlockState(), 35);
                 } else if (!(fromBlock instanceof TCBigDoor)) {
-                    middleState.handleNeighborChanged(world, middle, fromBlock, fromPos, isMoving);
+                    middleState.handleNeighborChanged(world, middle, fromBlock, orientation, isMoving);
                 }
                 return;
             }
@@ -179,7 +180,7 @@ public class TCBigDoor extends Block {
                         || !(upperState.getBlock() instanceof TCBigDoor)) {
                     world.setBlock(pos, Blocks.AIR.defaultBlockState(), 35);
                 } else if (!(fromBlock instanceof TCBigDoor)) {
-                    lowerState.handleNeighborChanged(world, lower, fromBlock, fromPos, isMoving);
+                    lowerState.handleNeighborChanged(world, lower, fromBlock, orientation, isMoving);
                 }
                 return;
             }

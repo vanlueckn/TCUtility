@@ -12,7 +12,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.InteractionResult;
@@ -38,7 +38,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
  */
 public class TCGarageDoor extends Block {
 
-    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final net.minecraft.world.level.block.state.properties.EnumProperty<net.minecraft.core.Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final BooleanProperty OPEN = BlockStateProperties.OPEN;
 
     private static final int MAX_REACH = 10;
@@ -64,12 +64,13 @@ public class TCGarageDoor extends Block {
             return InteractionResult.PASS;
         }
         toggleAt(world, pos, state);
-        return InteractionResult.sidedSuccess(world.isClientSide);
+        return InteractionResult.SUCCESS;
     }
 
     @Override
-    public void neighborChanged(final BlockState state, final net.minecraft.world.level.Level world,
-            final BlockPos pos, final Block fromBlock, final BlockPos fromPos,
+    protected void neighborChanged(final BlockState state, final net.minecraft.world.level.Level world,
+            final BlockPos pos, final Block fromBlock,
+            final net.minecraft.world.level.redstone.Orientation orientation,
             final boolean isMoving) {
         if (world.isClientSide) {
             return;
@@ -190,8 +191,10 @@ public class TCGarageDoor extends Block {
         if (rl == null) {
             return null;
         }
+        // 1.21.4: Registry.get(rl) liefert jetzt Optional<Holder.Reference>; getValue(rl)
+        // ist die Direkt-Lookup-Variante (vorher .get) -- liefert Block bzw. null.
         return BuiltInRegistries.BLOCK
-                .get(ResourceLocation.fromNamespaceAndPath(rl.getNamespace(), rl.getPath() + "_gate"));
+                .getValue(ResourceLocation.fromNamespaceAndPath(rl.getNamespace(), rl.getPath() + "_gate"));
     }
 
     private static int soundFor(final BlockState state, final boolean opening) {

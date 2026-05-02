@@ -13,8 +13,11 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
 
 /**
  * Pane-artiges Fenster mit zusaetzlicher vertikaler Verbindung. Zustaende
@@ -71,9 +74,12 @@ public class TCWindow extends Block {
     }
 
     @Override
-    public BlockState updateShape(final BlockState state, final Direction facing,
-            final BlockState facingState, final LevelAccessor world, final BlockPos currentPos,
-            final BlockPos facingPos) {
+    protected BlockState updateShape(final BlockState state, final LevelReader world,
+            final ScheduledTickAccess scheduledTickAccess, final BlockPos currentPos,
+            final Direction facing, final BlockPos facingPos, final BlockState facingState,
+            final RandomSource random) {
+        // 1.21.4: updateShape-Signatur erweitert um LevelReader/ScheduledTickAccess/RandomSource;
+        // Reihenfolge der vorhandenen Args ist auch leicht permutiert (currentPos vor facing).
         return computeConnections(state, world, currentPos);
     }
 
