@@ -35,6 +35,7 @@ import com.troblecodings.tcutility.utils.BlockProperties;
 import com.troblecodings.tcutility.utils.MaterialKindRegistry;
 
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -111,6 +112,9 @@ public final class TCBlocks {
         if (event.getRegistryKey().equals(Registries.BLOCK)) {
             event.register(Registries.BLOCK, helper -> {
                 for (final BlockSpec spec : blockSpecs) {
+                    // 1.21.2+: Block.Properties.setId muss vor dem Block-Ctor gesetzt sein,
+                    // sonst NPEt der DataComponent-Setup mit "Block id not set".
+                    spec.info.blockKey = ResourceKey.create(Registries.BLOCK, spec.rl);
                     final Block block = constructBlock(spec.type, spec.info);
                     spec.constructedBlock = block;
                     blocksToRegister.add(block);
@@ -118,12 +122,13 @@ public final class TCBlocks {
                     MaterialKindRegistry.put(block, spec.info.kind);
                     helper.register(spec.rl, block);
                     if (spec.type == BlockTypes.GARAGE) {
+                        final ResourceLocation gateRl = ResourceLocation.fromNamespaceAndPath(
+                                TCUtilityMain.MODID, spec.rl.getPath() + "_gate");
+                        spec.info.blockKey = ResourceKey.create(Registries.BLOCK, gateRl);
                         final Block gate = new TCGarageGate(spec.info);
                         spec.gateBlock = gate;
                         blocksToRegister.add(gate);
                         MaterialKindRegistry.put(gate, spec.info.kind);
-                        final ResourceLocation gateRl = ResourceLocation.fromNamespaceAndPath(
-                                TCUtilityMain.MODID, spec.rl.getPath() + "_gate");
                         blockEntries.add(Map.entry(gateRl, gate));
                         helper.register(gateRl, gate);
                     }
@@ -137,17 +142,21 @@ public final class TCBlocks {
                         continue;
                     }
                     if (block instanceof TCDoor) {
-                        helper.register(ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID,
-                                "door_" + spec.objectName), new TCDoorItem(block));
+                        final ResourceLocation rl = ResourceLocation.fromNamespaceAndPath(
+                                TCUtilityMain.MODID, "door_" + spec.objectName);
+                        helper.register(rl, new TCDoorItem(block, ResourceKey.create(Registries.ITEM, rl)));
                         continue;
                     }
                     if (block instanceof TCBigDoor) {
-                        helper.register(ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID,
-                                "bigdoor_" + spec.objectName), new TCBigDoorItem(block));
+                        final ResourceLocation rl = ResourceLocation.fromNamespaceAndPath(
+                                TCUtilityMain.MODID, "bigdoor_" + spec.objectName);
+                        helper.register(rl, new TCBigDoorItem(block, ResourceKey.create(Registries.ITEM, rl)));
                         continue;
                     }
-                    final BlockItem blockItem = (block instanceof TCSlab) ? new TCSlabItem(block)
-                            : new BlockItem(block, new Item.Properties());
+                    final ResourceKey<Item> itemKey = ResourceKey.create(Registries.ITEM, spec.rl);
+                    final BlockItem blockItem = (block instanceof TCSlab)
+                            ? new TCSlabItem(block, itemKey)
+                            : new BlockItem(block, new Item.Properties().setId(itemKey));
                     helper.register(spec.rl, blockItem);
                 }
             });

@@ -28,8 +28,9 @@ public class TCBigDoorItem extends Item {
 
     private final TCBigDoor door;
 
-    public TCBigDoorItem(final Block block) {
-        super(new Item.Properties());
+    public TCBigDoorItem(final Block block, final net.minecraft.resources.ResourceKey<Item> itemKey) {
+        // 1.21.2+: Item.Properties#setId muss vor dem Item-Ctor laufen.
+        super(new Item.Properties().setId(itemKey));
         this.door = (TCBigDoor) block;
         this.door.setItem(this);
     }

@@ -94,18 +94,22 @@ public final class TCItems {
         }
         event.register(Registries.ITEM, helper -> {
             for (final ArmorSpec spec : armorSpecs) {
-                // 1.21.4: humanoidProperties baut Properties mit korrekter Durability +
-                // Attribute fuer den Slot. Material wird direkt (nicht als Holder) uebergeben.
+                // 1.21.2+: Item.Properties#setId muss vor dem Item-Ctor gesetzt sein,
+                // sonst NPEt der DataComponent-Setup mit "Item id not set".
+                final ResourceLocation rl = ResourceLocation.fromNamespaceAndPath(
+                        TCUtilityMain.MODID, spec.registryName);
                 final Item.Properties props = spec.material.humanoidProperties(
-                        new Item.Properties(), spec.type);
+                        new Item.Properties().setId(ResourceKey.create(Registries.ITEM, rl)),
+                        spec.type);
                 final ArmorItem armorItem = new ArmorItem(spec.material, spec.type, props);
-                helper.register(ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID,
-                        spec.registryName), armorItem);
+                helper.register(rl, armorItem);
             }
             for (final String itemName : itemNames) {
-                final Item item = new Item(new Item.Properties());
-                helper.register(ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID,
-                        itemName), item);
+                final ResourceLocation rl = ResourceLocation.fromNamespaceAndPath(
+                        TCUtilityMain.MODID, itemName);
+                final Item item = new Item(new Item.Properties()
+                        .setId(ResourceKey.create(Registries.ITEM, rl)));
+                helper.register(rl, item);
             }
         });
     }

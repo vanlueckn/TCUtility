@@ -132,11 +132,13 @@ public final class TCFluidsInit {
         } else if (event.getRegistryKey().equals(Registries.BLOCK)) {
             event.register(Registries.BLOCK, helper -> {
                 for (final FluidEntry e : entries) {
-                    // 1.21: LiquidBlock-Ctor nimmt direkt FlowingFluid (kein Supplier mehr).
-                    // Der FLUIDS-RegisterEvent laeuft vor BLOCKS, daher ist sourceRef hier
-                    // bereits aufgeloest.
+                    // 1.21.2+: Block.Properties#setId muss vor dem Block-Ctor gesetzt sein.
+                    final ResourceLocation rl = ResourceLocation.fromNamespaceAndPath(
+                            TCUtilityMain.MODID, e.name);
                     final TCFluidBlock block = new TCFluidBlock(e.sourceRef.get(),
                             BlockBehaviour.Properties.of()
+                                    .setId(net.minecraft.resources.ResourceKey.create(
+                                            Registries.BLOCK, rl))
                                     .mapColor(MapColor.WATER)
                                     .replaceable()
                                     .pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY)
@@ -148,19 +150,23 @@ public final class TCFluidsInit {
                             e.info.effect, e.info.effectDuration, e.info.effectAmplifier);
                     e.blockRef.set(block);
                     blocksToRegister.add(block);
-                    helper.register(ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID,
-                            e.name), block);
+                    helper.register(rl, block);
                 }
             });
         } else if (event.getRegistryKey().equals(Registries.ITEM)) {
             event.register(Registries.ITEM, helper -> {
                 for (final FluidEntry e : entries) {
-                    // 1.21: BucketItem-Ctor nimmt direkt Fluid statt Supplier<Fluid>.
+                    // 1.21.2+: Item.Properties#setId muss vor dem Item-Ctor gesetzt sein.
+                    final ResourceLocation rl = ResourceLocation.fromNamespaceAndPath(
+                            TCUtilityMain.MODID, e.name + "_bucket");
                     final BucketItem bucket = new BucketItem(e.sourceRef.get(),
-                            new Item.Properties().stacksTo(1).craftRemainder(Items.BUCKET));
+                            new Item.Properties()
+                                    .setId(net.minecraft.resources.ResourceKey.create(
+                                            Registries.ITEM, rl))
+                                    .stacksTo(1)
+                                    .craftRemainder(Items.BUCKET));
                     e.bucketRef.set(bucket);
-                    helper.register(ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID,
-                            e.name + "_bucket"), bucket);
+                    helper.register(rl, bucket);
                 }
             });
         }
