@@ -1,6 +1,6 @@
-build/
-.gradle/
+/build/
+/.gradle/
 .claude/
-run/
-runs/
-.idea/
+/run/
+/runs/
+/.idea/
