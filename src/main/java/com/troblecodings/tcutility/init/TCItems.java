@@ -2,6 +2,7 @@ package com.troblecodings.tcutility.init;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,24 +16,24 @@ import com.troblecodings.tcutility.utils.ArmorCreateInfo;
 import com.troblecodings.tcutility.utils.ArmorProperties;
 import com.troblecodings.tcutility.utils.ItemProperties;
 
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.minecraftforge.registries.ForgeRegistries;
 import net.neoforged.neoforge.registries.RegisterEvent;
 
 /**
- * 1.19.2: {@code Item.<init>} ruft (wie Block.<init>) intern
- * {@code createIntrusiveHolder} und scheitert ausserhalb des ITEMS-
- * {@link RegisterEvent}-Frames an einer eingefrorenen Registry. Wir
- * sammeln daher in {@link #initJsonFiles} nur Spezifikationen
- * (Armor-Material/Slot bzw. plain-Item-Name) und konstruieren die
- * Items erst im {@link #onRegister}-Handler.
+ * Item-Registrierung. In 1.21 ist {@link ArmorMaterial} ein {@code record} (final, kein
+ * anonym implementierbares Interface mehr) und {@link ArmorItem} erwartet einen
+ * {@code Holder<ArmorMaterial>} statt der Material-Instanz selbst. Wir bauen das Material
+ * mit dem Record-Konstruktor und wickeln es per {@link Holder#direct(Object)} ein -- damit
+ * landen die Mod-eigenen Materials nicht in der Daten-Registry, was fuer reine Render-/
+ * Defense-Werte ausreicht.
  */
 public final class TCItems {
 
@@ -41,14 +42,16 @@ public final class TCItems {
 
     private static final class ArmorSpec {
         final String registryName;
-        final ArmorMaterial material;
+        final Holder<ArmorMaterial> material;
         final ArmorItem.Type type;
+        final int durabilityFactor;
 
-        ArmorSpec(final String registryName, final ArmorMaterial material,
-                final ArmorItem.Type type) {
+        ArmorSpec(final String registryName, final Holder<ArmorMaterial> material,
+                final ArmorItem.Type type, final int durabilityFactor) {
             this.registryName = registryName;
             this.material = material;
             this.type = type;
+            this.durabilityFactor = durabilityFactor;
         }
     }
 
@@ -56,9 +59,8 @@ public final class TCItems {
     private static final List<String> itemNames = new ArrayList<>();
 
     public static void init() {
-        // Reflection-Pfad fuer manuell deklarierte Items ist mit dem Defer-
-        // Modell nicht vereinbar -- Items duerfen erst im RegisterEvent
-        // konstruiert werden. No-op, bleibt fuer kuenftige Erweiterungen.
+        // Reflection-Pfad fuer manuell deklarierte Items ist mit dem Defer-Modell nicht
+        // vereinbar -- Items duerfen erst im RegisterEvent konstruiert werden. No-op.
     }
 
     public static void initJsonFiles() {
@@ -67,12 +69,13 @@ public final class TCItems {
             final String armorName = armorEntry.getKey();
             final ArmorProperties property = armorEntry.getValue();
             final ArmorCreateInfo armorInfo = property.getArmorInfo();
-            final ArmorMaterial material = makeArmorMaterial(armorName, armorInfo);
+            final Holder<ArmorMaterial> material = makeArmorMaterial(armorName, armorInfo);
             final List<String> slots = property.getSlots();
             for (final String slot : slots) {
                 final ArmorTypes type = Enum.valueOf(ArmorTypes.class, slot.toUpperCase());
                 final String registryName = type.getRegistryName(armorName);
-                armorSpecs.add(new ArmorSpec(registryName, material, mapType(type)));
+                armorSpecs.add(new ArmorSpec(registryName, material, mapType(type),
+                        armorInfo.durability));
             }
         }
 
@@ -89,14 +92,19 @@ public final class TCItems {
         }
         event.register(Registries.ITEM, helper -> {
             for (final ArmorSpec spec : armorSpecs) {
-                final ArmorItem armorItem = new ArmorItem(spec.material, spec.type,
-                        new Item.Properties());
-                helper.register(ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID, spec.registryName),
-                        armorItem);
+                // 1.21: ArmorItem-Ctor uebernimmt die Durability nicht mehr aus dem Material;
+                // wir leiten sie ueber Item.Properties#durability aus dem JSON-Wert ab und
+                // nutzen den vanilla Type-Multiplikator (Helmet*11, Chestplate*16, ...).
+                final Item.Properties props = new Item.Properties()
+                        .durability(spec.type.getDurability(spec.durabilityFactor));
+                final ArmorItem armorItem = new ArmorItem(spec.material, spec.type, props);
+                helper.register(ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID,
+                        spec.registryName), armorItem);
             }
             for (final String itemName : itemNames) {
                 final Item item = new Item(new Item.Properties());
-                helper.register(ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID, itemName), item);
+                helper.register(ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID,
+                        itemName), item);
             }
         });
     }
@@ -117,55 +125,32 @@ public final class TCItems {
     }
 
     /**
-     * 1.19.2 hat keinen EnumHelper.addArmorMaterial; stattdessen wird ein
-     * {@link ArmorMaterial} pro Material instanziert. ArmorMaterial ist ein
-     * pures Interface und nutzt selbst keine Registry-Holder, daher ist die
-     * Konstruktion bereits im Mod-Konstruktor unbedenklich.
+     * 1.21: ArmorMaterial ist ein finaler Record. Wir konstruieren ihn direkt und schliessen
+     * ihn in einen Direct-Holder ein -- ArmorItem nimmt {@code Holder<ArmorMaterial>}, eine
+     * Eintragung in der Vanilla-{@code Registries.ARMOR_MATERIAL}-Registry ist fuer rein
+     * funktionale Werte (Defense, Sound, Toughness) nicht noetig.
+     *
+     * <p>Texture-Layer wird auf {@code <modid>:<armorName>} gesetzt; das Asset-Lookup-Schema
+     * sucht spaeter {@code assets/<modid>/textures/entity/equipment/humanoid/<armorName>.png}
+     * (1.21-Pfad) bzw. {@code .../humanoid_leggings/<armorName>.png}.
      */
-    private static ArmorMaterial makeArmorMaterial(final String name,
+    private static Holder<ArmorMaterial> makeArmorMaterial(final String name,
             final ArmorCreateInfo info) {
-        final String texturePrefix = TCUtilityMain.MODID + ":" + name;
-        return new ArmorMaterial() {
-            @Override
-            public int getDurabilityForType(final ArmorItem.Type type) {
-                return info.durability;
-            }
-
-            @Override
-            public int getDefenseForType(final ArmorItem.Type type) {
-                return 1;
-            }
-
-            @Override
-            public int getEnchantmentValue() {
-                return info.enchantability;
-            }
-
-            @Override
-            public SoundEvent getEquipSound() {
-                return SoundEvents.ARMOR_EQUIP_GENERIC;
-            }
-
-            @Override
-            public Ingredient getRepairIngredient() {
-                return Ingredient.EMPTY;
-            }
-
-            @Override
-            public String getName() {
-                return texturePrefix;
-            }
-
-            @Override
-            public float getToughness() {
-                return info.toughness;
-            }
-
-            @Override
-            public float getKnockbackResistance() {
-                return 0.0F;
-            }
-        };
+        final ResourceLocation assetId = ResourceLocation.fromNamespaceAndPath(
+                TCUtilityMain.MODID, name);
+        final Map<ArmorItem.Type, Integer> defense = new EnumMap<>(ArmorItem.Type.class);
+        for (final ArmorItem.Type type : ArmorItem.Type.values()) {
+            defense.put(type, 1);
+        }
+        final ArmorMaterial material = new ArmorMaterial(
+                defense,
+                info.enchantability,
+                SoundEvents.ARMOR_EQUIP_GENERIC,
+                () -> Ingredient.EMPTY,
+                List.of(new ArmorMaterial.Layer(assetId)),
+                info.toughness,
+                0.0F);
+        return Holder.direct(material);
     }
 
     private static Map<String, ArmorProperties> getArmorFromJson(final String directory) {
