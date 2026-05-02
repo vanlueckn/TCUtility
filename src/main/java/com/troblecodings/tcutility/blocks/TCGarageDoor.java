@@ -19,7 +19,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.level.block.Mirror;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.BlockHitResult;
@@ -72,7 +72,7 @@ public class TCGarageDoor extends Block {
             final BlockPos pos, final Block fromBlock,
             final net.minecraft.world.level.redstone.Orientation orientation,
             final boolean isMoving) {
-        if (world.isClientSide) {
+        if (world.isClientSide()) {
             return;
         }
         final boolean powered = world.hasNeighborSignal(pos);
@@ -187,14 +187,14 @@ public class TCGarageDoor extends Block {
 
     @Nullable
     private Block resolveGateBlock() {
-        final ResourceLocation rl = this.builtInRegistryHolder().key().location();
+        final Identifier rl = this.builtInRegistryHolder().key().identifier();
         if (rl == null) {
             return null;
         }
         // 1.21.4: Registry.get(rl) liefert jetzt Optional<Holder.Reference>; getValue(rl)
         // ist die Direkt-Lookup-Variante (vorher .get) -- liefert Block bzw. null.
         return BuiltInRegistries.BLOCK
-                .getValue(ResourceLocation.fromNamespaceAndPath(rl.getNamespace(), rl.getPath() + "_gate"));
+                .getValue(Identifier.fromNamespaceAndPath(rl.getNamespace(), rl.getPath() + "_gate"));
     }
 
     private static int soundFor(final BlockState state, final boolean opening) {

@@ -36,7 +36,7 @@ import com.troblecodings.tcutility.utils.MaterialKindRegistry;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
@@ -58,13 +58,13 @@ public final class TCBlocks {
 
     private static final class BlockSpec {
         final String objectName;
-        final ResourceLocation rl;
+        final Identifier rl;
         final BlockTypes type;
         final BlockCreateInfo info;
         Block constructedBlock;
         Block gateBlock;
 
-        BlockSpec(final String objectName, final ResourceLocation rl, final BlockTypes type,
+        BlockSpec(final String objectName, final Identifier rl, final BlockTypes type,
                 final BlockCreateInfo info) {
             this.objectName = objectName;
             this.rl = rl;
@@ -82,7 +82,7 @@ public final class TCBlocks {
      * Legacy-Kompatibilitaet -- TCRenderTypes pruefte bisher ueber blockEntries.
      * Wird waehrend des BLOCKS-RegisterEvent gefuellt.
      */
-    public static final List<Entry<ResourceLocation, Block>> blockEntries = new ArrayList<>();
+    public static final List<Entry<Identifier, Block>> blockEntries = new ArrayList<>();
 
     public static void init() {
         // Reflection-Pfad fuer manuelle public-static-final-Felder ist mit
@@ -101,7 +101,7 @@ public final class TCBlocks {
             for (final String state : states) {
                 final BlockTypes type = Enum.valueOf(BlockTypes.class, state.toUpperCase());
                 final String registryName = type.getRegistryName(objectname);
-                final ResourceLocation rl = ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID, registryName);
+                final Identifier rl = Identifier.fromNamespaceAndPath(TCUtilityMain.MODID, registryName);
                 blockSpecs.add(new BlockSpec(objectname, rl, type, blockInfo));
             }
         }
@@ -122,7 +122,7 @@ public final class TCBlocks {
                     MaterialKindRegistry.put(block, spec.info.kind);
                     helper.register(spec.rl, block);
                     if (spec.type == BlockTypes.GARAGE) {
-                        final ResourceLocation gateRl = ResourceLocation.fromNamespaceAndPath(
+                        final Identifier gateRl = Identifier.fromNamespaceAndPath(
                                 TCUtilityMain.MODID, spec.rl.getPath() + "_gate");
                         spec.info.blockKey = ResourceKey.create(Registries.BLOCK, gateRl);
                         final Block gate = new TCGarageGate(spec.info);
@@ -142,13 +142,13 @@ public final class TCBlocks {
                         continue;
                     }
                     if (block instanceof TCDoor) {
-                        final ResourceLocation rl = ResourceLocation.fromNamespaceAndPath(
+                        final Identifier rl = Identifier.fromNamespaceAndPath(
                                 TCUtilityMain.MODID, "door_" + spec.objectName);
                         helper.register(rl, new TCDoorItem(block, ResourceKey.create(Registries.ITEM, rl)));
                         continue;
                     }
                     if (block instanceof TCBigDoor) {
-                        final ResourceLocation rl = ResourceLocation.fromNamespaceAndPath(
+                        final Identifier rl = Identifier.fromNamespaceAndPath(
                                 TCUtilityMain.MODID, "bigdoor_" + spec.objectName);
                         helper.register(rl, new TCBigDoorItem(block, ResourceKey.create(Registries.ITEM, rl)));
                         continue;

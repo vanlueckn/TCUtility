@@ -23,7 +23,7 @@ import com.troblecodings.tcutility.utils.MaterialKindRegistry;
 
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -71,25 +71,25 @@ public final class TCRenderTypes {
      */
     @SubscribeEvent
     public static void registerItemModelCodecs(final RegisterItemModelsEvent event) {
-        event.register(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
+        event.register(net.minecraft.resources.Identifier.fromNamespaceAndPath(
                 "neoforge", "fluid_container"), DynamicFluidContainerModel.Unbaked.MAP_CODEC);
     }
 
     @SubscribeEvent
     public static void registerFluidExtensions(final RegisterClientExtensionsEvent event) {
         for (final TCFluidsInit.FluidEntry e : TCFluidsInit.entries) {
-            final ResourceLocation still = ResourceLocation.fromNamespaceAndPath(
+            final Identifier still = Identifier.fromNamespaceAndPath(
                     TCUtilityMain.MODID, "blocks/" + e.name + "_still");
-            final ResourceLocation flow = ResourceLocation.fromNamespaceAndPath(
+            final Identifier flow = Identifier.fromNamespaceAndPath(
                     TCUtilityMain.MODID, "blocks/" + e.name + "_flow");
             event.registerFluidType(new IClientFluidTypeExtensions() {
                 @Override
-                public ResourceLocation getStillTexture() {
+                public Identifier getStillTexture() {
                     return still;
                 }
 
                 @Override
-                public ResourceLocation getFlowingTexture() {
+                public Identifier getFlowingTexture() {
                     return flow;
                 }
             }, e.typeRef.get());
@@ -115,7 +115,10 @@ public final class TCRenderTypes {
             return ChunkSectionLayer.CUTOUT;
         }
         if (kind == MaterialKind.LEAVES || kind == MaterialKind.PLANT) {
-            return ChunkSectionLayer.CUTOUT_MIPPED;
+            // 1.21.11: ChunkSectionLayer.CUTOUT_MIPPED ist weg, nur noch SOLID/CUTOUT/
+            // TRANSLUCENT/TRIPWIRE; Mipmap-Behandlung haengt jetzt komplett an der
+            // Atlas-Pipeline statt am Layer.
+            return ChunkSectionLayer.CUTOUT;
         }
         return ChunkSectionLayer.SOLID;
     }

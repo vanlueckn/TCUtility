@@ -213,7 +213,7 @@ public class TCBigDoor extends Block {
             }
         }
         if (broken) {
-            if (!world.isClientSide && this.item != null) {
+            if (!world.isClientSide() && this.item != null) {
                 Block.popResource(world, pos, new ItemStack(this.item));
             }
             return;

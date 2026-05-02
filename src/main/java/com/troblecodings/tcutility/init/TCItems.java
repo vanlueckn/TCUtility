@@ -21,7 +21,7 @@ import java.util.Set;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.Item;
@@ -103,7 +103,7 @@ public final class TCItems {
                 // 1.21.8: ArmorItem ist abgeschafft; Armor ist jetzt ein Item mit den per
                 // Item.Properties#humanoidArmor gesetzten DataComponents (Equippable + Defense
                 // + Toughness). Item.Properties#setId bleibt Pflicht (Item-Ctor NPEt sonst).
-                final ResourceLocation rl = ResourceLocation.fromNamespaceAndPath(
+                final Identifier rl = Identifier.fromNamespaceAndPath(
                         TCUtilityMain.MODID, spec.registryName);
                 final Item.Properties props = new Item.Properties()
                         .setId(ResourceKey.create(Registries.ITEM, rl))
@@ -113,7 +113,7 @@ public final class TCItems {
                 helper.register(rl, armorItem);
             }
             for (final String itemName : itemNames) {
-                final ResourceLocation rl = ResourceLocation.fromNamespaceAndPath(
+                final Identifier rl = Identifier.fromNamespaceAndPath(
                         TCUtilityMain.MODID, itemName);
                 final Item item = new Item(new Item.Properties()
                         .setId(ResourceKey.create(Registries.ITEM, rl)));
@@ -151,7 +151,7 @@ public final class TCItems {
             defense.put(type, 1);
         }
         final ResourceKey<EquipmentAsset> assetId = ResourceKey.create(EquipmentAssets.ROOT_ID,
-                ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID, name));
+                Identifier.fromNamespaceAndPath(TCUtilityMain.MODID, name));
         return new ArmorMaterial(
                 info.durability,
                 defense,

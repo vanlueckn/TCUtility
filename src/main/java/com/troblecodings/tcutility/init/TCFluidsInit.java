@@ -17,7 +17,7 @@ import com.troblecodings.tcutility.utils.FluidCreateInfo;
 import com.troblecodings.tcutility.utils.FluidProperties;
 
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
@@ -94,7 +94,7 @@ public final class TCFluidsInit {
                             .lightLevel(e.info.luminosity)
                             .temperature(e.info.temperature));
                     e.typeRef.set(type);
-                    helper.register(ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID,
+                    helper.register(Identifier.fromNamespaceAndPath(TCUtilityMain.MODID,
                             e.name + "_type"), type);
                 }
             });
@@ -118,14 +118,14 @@ public final class TCFluidsInit {
                             ? new TCUpwardFlowingFluid.Source(props, e.info.flowLength)
                             : new BaseFlowingFluid.Source(props);
                     e.sourceRef.set(source);
-                    helper.register(ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID, e.name), source);
+                    helper.register(Identifier.fromNamespaceAndPath(TCUtilityMain.MODID, e.name), source);
 
                     final FlowingFluid flowing = upward
                             ? new TCUpwardFlowingFluid.Flowing(props, e.info.flowLength)
                             : new BaseFlowingFluid.Flowing(props);
                     e.flowingRef.set(flowing);
                     helper.register(
-                            ResourceLocation.fromNamespaceAndPath(TCUtilityMain.MODID, e.name + "_flowing"),
+                            Identifier.fromNamespaceAndPath(TCUtilityMain.MODID, e.name + "_flowing"),
                             flowing);
                 }
             });
@@ -133,7 +133,7 @@ public final class TCFluidsInit {
             event.register(Registries.BLOCK, helper -> {
                 for (final FluidEntry e : entries) {
                     // 1.21.2+: Block.Properties#setId muss vor dem Block-Ctor gesetzt sein.
-                    final ResourceLocation rl = ResourceLocation.fromNamespaceAndPath(
+                    final Identifier rl = Identifier.fromNamespaceAndPath(
                             TCUtilityMain.MODID, e.name);
                     final TCFluidBlock block = new TCFluidBlock(e.sourceRef.get(),
                             BlockBehaviour.Properties.of()
@@ -143,7 +143,7 @@ public final class TCFluidsInit {
                                     .replaceable()
                                     .pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY)
                                     .liquid()
-                                    .noCollission()
+                                    .noCollision()
                                     .strength(100f)
                                     .noLootTable()
                                     .lightLevel(state -> e.info.luminosity),
@@ -157,7 +157,7 @@ public final class TCFluidsInit {
             event.register(Registries.ITEM, helper -> {
                 for (final FluidEntry e : entries) {
                     // 1.21.2+: Item.Properties#setId muss vor dem Item-Ctor gesetzt sein.
-                    final ResourceLocation rl = ResourceLocation.fromNamespaceAndPath(
+                    final Identifier rl = Identifier.fromNamespaceAndPath(
                             TCUtilityMain.MODID, e.name + "_bucket");
                     final BucketItem bucket = new BucketItem(e.sourceRef.get(),
                             new Item.Properties()

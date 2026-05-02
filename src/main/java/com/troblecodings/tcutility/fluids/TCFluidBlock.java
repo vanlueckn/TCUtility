@@ -38,10 +38,12 @@ public class TCFluidBlock extends LiquidBlock {
 
     @Override
     protected void entityInside(final BlockState state, final Level world, final BlockPos pos,
-            final Entity entity, final InsideBlockEffectApplier effectApplier) {
-        // 1.21.8: entityInside ist protected und nimmt zusaetzlich einen
-        // InsideBlockEffectApplier-Parameter (vanilla-managed Particle/Effect-Pipeline).
-        super.entityInside(state, world, pos, entity, effectApplier);
+            final Entity entity, final InsideBlockEffectApplier effectApplier,
+            final boolean entered) {
+        // 1.21.11: entityInside hat einen zusaetzlichen boolean-Parameter (entered) bekommen,
+        // der unterscheidet, ob die Entity gerade in den Block eingedrungen ist (true) oder
+        // sich nur weiter im Block bewegt (false).
+        super.entityInside(state, world, pos, entity, effectApplier, entered);
         if (effect != null && entity instanceof LivingEntity) {
             ((LivingEntity) entity).addEffect(new MobEffectInstance(effect,
                     Math.max(1, durationSeconds) * 20, Math.max(0, amplifier - 1)));

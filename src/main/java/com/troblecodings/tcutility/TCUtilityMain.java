@@ -46,10 +46,16 @@ public class TCUtilityMain {
     }
 
     /**
-     * 1.19+ verwendet einen Modul-Classloader, der Mod-Resources unter dem
-     * {@code union:}-URL-Schema rausgibt; {@code Class.getResource} + {@code Paths.get(URI)}
-     * schlaegt damit fehl. Wir holen die Pfade direkt aus dem ModFile, das fuer alle Schema-
-     * Varianten einen NIO-Path liefert.
+     * 1.21.11: {@code IModFile#findResource(String)} ist entfernt. Resource-Lookup geht jetzt
+     * ueber {@code getContents().findFile(String)} und liefert {@link Optional}{@code <URI>};
+     * der URI wird dann via {@link Paths#get(URI)} zurueck zu einem NIO-Path konvertiert
+     * (funktioniert sowohl fuer {@code file:} als auch fuer {@code union:}/{@code jar:}-Schemata).
+     */
+    /**
+     * 1.21.11: {@code IModFile#findResource(String)} ist entfernt, und
+     * {@code JarContents#findFile(String)} findet nur Dateien, nicht Verzeichnisse.
+     * Fuer Directory-Listing muessen wir ueber {@code getContentRoots()} iterieren und
+     * den ersten Root verwenden, der das angefragte Sub-Directory tatsaechlich enthaelt.
      */
     private static Optional<Path> getRessourceLocation(final String location) {
         try {
@@ -57,11 +63,14 @@ public class TCUtilityMain {
             if (modFileInfo == null) {
                 return Optional.empty();
             }
-            final Path resolved = modFileInfo.getFile().findResource(location);
-            if (resolved == null) {
-                return Optional.empty();
+            final var contents = modFileInfo.getFile().getContents();
+            for (final Path root : contents.getContentRoots()) {
+                final Path candidate = root.resolve(location);
+                if (java.nio.file.Files.exists(candidate)) {
+                    return Optional.of(candidate);
+                }
             }
-            return Optional.of(resolved);
+            return Optional.empty();
         } catch (final Exception e) {
             LOG.error("[TCUtility] Failed to resolve mod resource '{}'", location, e);
             return Optional.empty();
