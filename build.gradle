@@ -21,6 +21,14 @@ sourceSets{
         java {
             srcDirs("contentPackLib/src")
         }
+        // Forge-1.20.4-Dev-Mode-Workaround: ohne diese Zeile schreibt Gradle
+        // META-INF/mods.toml in build/resources/main, waehrend die .class-Files
+        // in build/classes/java/main liegen. Forges Mod-Discovery sieht beide
+        // als separate "Mod Files", findet in resources/main keine @Mod-Klasse
+        // und crasht mit "has mods that were not found". Wir kippen die
+        // Resources direkt in den Classes-Output, dann liegt mods.toml neben
+        // den Klassen im gleichen Pfad.
+        output.resourcesDir = java.classesDirectory
     }
 }
 
