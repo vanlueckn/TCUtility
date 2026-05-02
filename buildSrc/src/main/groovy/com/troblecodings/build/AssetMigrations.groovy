@@ -6,6 +6,7 @@ import com.troblecodings.build.steps.FenceWallTagGenStep
 import com.troblecodings.build.steps.FixHashedTextureKeysStep
 import com.troblecodings.build.steps.FluidAssetGenStep
 import com.troblecodings.build.steps.ForgeMarkerBlockstateStep
+import com.troblecodings.build.steps.NeoForgeNamespaceStep
 import com.troblecodings.build.steps.VanillaPostFlatteningRenameStep
 import com.troblecodings.build.steps.VanillaTextureRefStep
 
@@ -69,6 +70,19 @@ class AssetMigrations {
     static List<AssetMigrationStep> mc1_19_to_mc1_20() {
         return [
                 new BucketLoaderRenameStep(),
+        ]
+    }
+
+    /**
+     * Migrationen 1.20 -> 1.21 (NeoForge). NeoForge hat den Forge-Namespace aus den
+     * Builtin-Loadern und -Models entfernt; {@code forge:fluid_container} heisst jetzt
+     * {@code neoforge:fluid_container}, das Bucket-Parent-Model {@code forge:item/bucket}
+     * heisst {@code neoforge:item/bucket}. Im Forge-1.21-Build (sollte er kommen) wird der
+     * Step nicht angehaengt -- nur die NeoForge-Pipeline laesst ihn laufen.
+     */
+    static List<AssetMigrationStep> mc1_20_to_mc1_21_neoforge() {
+        return [
+                new NeoForgeNamespaceStep(),
         ]
     }
 }
