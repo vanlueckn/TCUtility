@@ -23,7 +23,6 @@ import com.troblecodings.tcutility.fluids.TCFluidBlock;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.CreativeModeTab;
@@ -151,7 +150,9 @@ public final class TCTabs {
             final CreativeModeTab.Output out) {
         forEachModItem(item -> {
             final Block block = blockOf(item);
-            if (block == null && !(item instanceof BucketItem) && !(item instanceof ArmorItem)) {
+            // 1.21.8: ArmorItem-Klasse weg; armor-Items sind plain Items mit Equippable-
+            // Component. TCItems#armorItems ist die Quelle der Wahrheit.
+            if (block == null && !(item instanceof BucketItem) && !TCItems.armorItems.contains(item)) {
                 out.accept(new ItemStack(item));
             }
         });

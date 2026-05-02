@@ -22,7 +22,7 @@ import com.troblecodings.tcutility.utils.MaterialKind;
 import com.troblecodings.tcutility.utils.MaterialKindRegistry;
 
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.neoforged.api.distmarker.Dist;
@@ -37,7 +37,7 @@ import net.neoforged.neoforge.client.model.item.DynamicFluidContainerModel;
 /**
  * Client-seitige Render-Layer-Registrierung. Loest die 1.14.4-Lösung ab, bei der jeder Block in
  * {@code getRenderLayer()} sein eigenes {@code BlockRenderLayer} zurueckgegeben hat -- das gibt's
- * ab 1.15 nicht mehr. Stattdessen wird hier pro registriertem Block der passende {@link RenderType}
+ * ab 1.15 nicht mehr. Stattdessen wird hier pro registriertem Block der passende {@link ChunkSectionLayer}
  * hinterlegt: Blocktyp + MaterialKind entscheiden gemeinsam, weil eine Holztuer CUTOUT, aber eine
  * Glastuer TRANSLUCENT braucht. 1.20: vanilla {@code Material} ist entfernt; wir lesen den
  * mod-internen MaterialKind aus {@link MaterialKindRegistry}.
@@ -54,7 +54,7 @@ public final class TCRenderTypes {
             ItemBlockRenderTypes.setRenderLayer(block, layerFor(block));
         }
         for (final Block fluidBlock : TCFluidsInit.blocksToRegister) {
-            ItemBlockRenderTypes.setRenderLayer(fluidBlock, RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(fluidBlock, ChunkSectionLayer.TRANSLUCENT);
         }
     }
 
@@ -96,10 +96,10 @@ public final class TCRenderTypes {
         }
     }
 
-    private static RenderType layerFor(final Block block) {
+    private static ChunkSectionLayer layerFor(final Block block) {
         final MaterialKind kind = MaterialKindRegistry.get(block);
         if (kind == MaterialKind.GLASS || kind == MaterialKind.ICE || kind == MaterialKind.ICE_SOLID) {
-            return RenderType.translucent();
+            return ChunkSectionLayer.TRANSLUCENT;
         }
         // Bloecke mit ausgefraester / nicht-rechteckiger Geometrie brauchen einen CUTOUT-Layer,
         // damit die Texturen-Alpha sauber ausgeschnitten werden -- unabhaengig vom MaterialKind,
@@ -112,11 +112,11 @@ public final class TCRenderTypes {
                 || block instanceof TCWall || block instanceof TCStairs
                 || block instanceof TCSlab || block instanceof TCCubeRotation
                 || block instanceof TCCubeRotationAll) {
-            return RenderType.cutout();
+            return ChunkSectionLayer.CUTOUT;
         }
         if (kind == MaterialKind.LEAVES || kind == MaterialKind.PLANT) {
-            return RenderType.cutoutMipped();
+            return ChunkSectionLayer.CUTOUT_MIPPED;
         }
-        return RenderType.solid();
+        return ChunkSectionLayer.SOLID;
     }
 }

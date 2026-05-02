@@ -5,6 +5,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.InsideBlockEffectApplier;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -36,9 +37,11 @@ public class TCFluidBlock extends LiquidBlock {
     }
 
     @Override
-    public void entityInside(final BlockState state, final Level world, final BlockPos pos,
-            final Entity entity) {
-        super.entityInside(state, world, pos, entity);
+    protected void entityInside(final BlockState state, final Level world, final BlockPos pos,
+            final Entity entity, final InsideBlockEffectApplier effectApplier) {
+        // 1.21.8: entityInside ist protected und nimmt zusaetzlich einen
+        // InsideBlockEffectApplier-Parameter (vanilla-managed Particle/Effect-Pipeline).
+        super.entityInside(state, world, pos, entity, effectApplier);
         if (effect != null && entity instanceof LivingEntity) {
             ((LivingEntity) entity).addEffect(new MobEffectInstance(effect,
                     Math.max(1, durationSeconds) * 20, Math.max(0, amplifier - 1)));

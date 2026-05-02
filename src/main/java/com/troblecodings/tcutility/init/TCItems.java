@@ -16,12 +16,14 @@ import com.troblecodings.tcutility.utils.ArmorCreateInfo;
 import com.troblecodings.tcutility.utils.ArmorProperties;
 import com.troblecodings.tcutility.utils.ItemProperties;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.ItemTags;
-import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.equipment.ArmorMaterial;
 import net.minecraft.world.item.equipment.ArmorType;
@@ -61,6 +63,10 @@ public final class TCItems {
 
     private static final List<ArmorSpec> armorSpecs = new ArrayList<>();
     private static final List<String> itemNames = new ArrayList<>();
+    /** 1.21.8: ArmorItem ist weg -- Armor ist ein Item mit Equippable-Component. Damit
+     *  TCTabs den DOORS-Tab korrekt fuellen kann ({@code !item instanceof ArmorItem} geht
+     *  nicht mehr), tracken wir registrierte Armor-Items in einem Set. */
+    public static final Set<Item> armorItems = new HashSet<>();
 
     public static void init() {
         // No-op; Items werden erst im RegisterEvent konstruiert.
@@ -94,14 +100,16 @@ public final class TCItems {
         }
         event.register(Registries.ITEM, helper -> {
             for (final ArmorSpec spec : armorSpecs) {
-                // 1.21.2+: Item.Properties#setId muss vor dem Item-Ctor gesetzt sein,
-                // sonst NPEt der DataComponent-Setup mit "Item id not set".
+                // 1.21.8: ArmorItem ist abgeschafft; Armor ist jetzt ein Item mit den per
+                // Item.Properties#humanoidArmor gesetzten DataComponents (Equippable + Defense
+                // + Toughness). Item.Properties#setId bleibt Pflicht (Item-Ctor NPEt sonst).
                 final ResourceLocation rl = ResourceLocation.fromNamespaceAndPath(
                         TCUtilityMain.MODID, spec.registryName);
-                final Item.Properties props = spec.material.humanoidProperties(
-                        new Item.Properties().setId(ResourceKey.create(Registries.ITEM, rl)),
-                        spec.type);
-                final ArmorItem armorItem = new ArmorItem(spec.material, spec.type, props);
+                final Item.Properties props = new Item.Properties()
+                        .setId(ResourceKey.create(Registries.ITEM, rl))
+                        .humanoidArmor(spec.material, spec.type);
+                final Item armorItem = new Item(props);
+                armorItems.add(armorItem);
                 helper.register(rl, armorItem);
             }
             for (final String itemName : itemNames) {

@@ -243,15 +243,15 @@ public class TCBigDoor extends Block {
     }
 
     @Override
-    public void onRemove(final BlockState state, final Level world, final BlockPos pos,
-            final BlockState newState, final boolean isMoving) {
-        if (state.getBlock() != newState.getBlock()) {
-            // Wenn der Block via Explosion / setBlockState aus der Welt
-            // verschwindet (nicht via playerWillDestroy), trotzdem die
-            // anderen zwei Glieder nachreissen.
-            removeAllParts(world, pos, state);
-        }
-        super.onRemove(state, world, pos, newState, isMoving);
+    protected void affectNeighborsAfterRemoval(final BlockState state,
+            final net.minecraft.server.level.ServerLevel world, final BlockPos pos,
+            final boolean isMoving) {
+        // 1.21.8: onRemove ist abgeschafft; affectNeighborsAfterRemoval ist die nachgeladene
+        // Variante, die NUR bei tatsaechlichem Block-Verschwinden feuert (nicht bei reinen
+        // State-Wechseln wie open/close). Damit faellt die alte state.getBlock() != newState
+        // .getBlock()-Pruefung weg.
+        removeAllParts(world, pos, state);
+        super.affectNeighborsAfterRemoval(state, world, pos, isMoving);
     }
 
     /**
