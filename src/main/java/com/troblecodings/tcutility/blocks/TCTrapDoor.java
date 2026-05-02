@@ -8,6 +8,6 @@ import net.minecraft.world.level.block.state.properties.BlockSetType;
 public class TCTrapDoor extends TrapDoorBlock {
 
     public TCTrapDoor(final BlockCreateInfo blockInfo) {
-        super(blockInfo.toNonSolidProperties(), BlockSetType.OAK);
+        super(BlockSetType.OAK, blockInfo.toNonSolidProperties());
     }
 }

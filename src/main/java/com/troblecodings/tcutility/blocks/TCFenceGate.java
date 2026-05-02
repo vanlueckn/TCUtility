@@ -8,6 +8,6 @@ import net.minecraft.world.level.block.state.properties.WoodType;
 public class TCFenceGate extends FenceGateBlock {
 
     public TCFenceGate(final BlockCreateInfo blockInfo) {
-        super(blockInfo.toNonSolidProperties(), WoodType.OAK);
+        super(WoodType.OAK, blockInfo.toNonSolidProperties());
     }
 }

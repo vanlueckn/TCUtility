@@ -234,12 +234,12 @@ public class TCBigDoor extends Block {
     }
 
     @Override
-    public void playerWillDestroy(final Level world, final BlockPos pos, final BlockState state,
+    public BlockState playerWillDestroy(final Level world, final BlockPos pos, final BlockState state,
             final Player player) {
         if (player.getAbilities().instabuild) {
             removeAllParts(world, pos, state);
         }
-        super.playerWillDestroy(world, pos, state, player);
+        return super.playerWillDestroy(world, pos, state, player);
     }
 
     @Override

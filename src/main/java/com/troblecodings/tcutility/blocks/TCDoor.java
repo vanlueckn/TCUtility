@@ -11,7 +11,7 @@ public class TCDoor extends DoorBlock {
     protected Item item;
 
     public TCDoor(final BlockCreateInfo blockInfo) {
-        super(blockInfo.toNonSolidProperties(), BlockSetType.OAK);
+        super(BlockSetType.OAK, blockInfo.toNonSolidProperties());
     }
 
     public void setItem(final Item item) {

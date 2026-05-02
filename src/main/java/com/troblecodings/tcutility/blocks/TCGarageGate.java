@@ -59,8 +59,8 @@ public class TCGarageGate extends TCCubeRotation {
     }
 
     @Override
-    public void playerWillDestroy(final Level world, final BlockPos pos, final BlockState state,
-            final Player player) {
+    public BlockState playerWillDestroy(final Level world, final BlockPos pos,
+            final BlockState state, final Player player) {
         // Saeule nach unten: weitere Gate-Segmente entfernen.
         for (int i = 1; i < MAX_REACH; i++) {
             final BlockPos below = pos.below(i);
@@ -82,6 +82,6 @@ public class TCGarageGate extends TCCubeRotation {
             }
             break;
         }
-        super.playerWillDestroy(world, pos, state, player);
+        return super.playerWillDestroy(world, pos, state, player);
     }
 }

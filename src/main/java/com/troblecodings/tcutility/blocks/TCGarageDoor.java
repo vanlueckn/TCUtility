@@ -86,12 +86,12 @@ public class TCGarageDoor extends Block {
     }
 
     @Override
-    public void playerWillDestroy(final net.minecraft.world.level.Level world, final BlockPos pos,
+    public BlockState playerWillDestroy(final net.minecraft.world.level.Level world, final BlockPos pos,
             final BlockState state, final Player player) {
         // Beim Brechen des Headers: alle daran haengenden Gates entfernen
         // (sonst bleibt ein freischwebendes Tor zurueck).
         clearGatesBelow(world, pos);
-        super.playerWillDestroy(world, pos, state, player);
+        return super.playerWillDestroy(world, pos, state, player);
     }
 
     /**
