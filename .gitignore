@@ -1,5 +1,7 @@
 /build/
 /.gradle/
+buildSrc/build/
+buildSrc/.gradle/
 .claude/
 /run/
 /runs/
